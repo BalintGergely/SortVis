@@ -30,6 +30,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -164,6 +165,16 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 		JPanel sidebar = new JPanel();
 		sidebar.setLayout(new BoxLayout(sidebar,BoxLayout.Y_AXIS));
 		frame.add(sidebar,BorderLayout.LINE_START);
+		{
+			JButton abt = new JButton("About");
+			abt.addActionListener((ActionEvent e) -> {
+				JOptionPane.showMessageDialog(this, "Sorting Algorithm Visualizer\nBy: Bálint János Gergely\ngithub.com/BalintGergely/SortVis", "About", JOptionPane.INFORMATION_MESSAGE);
+			});
+			abt.setForeground(Color.GREEN.darker());
+			abt.setOpaque(false);
+			abt.setPreferredSize(new Dimension(128,16));
+			sidebar.add(abt);
+		}
 		{
 			JPanel drawerSubpanel = new JPanel(new GridLayout(0,2));
 			drawerSubpanel.add(new JLabel("Shape:"));
