@@ -216,13 +216,51 @@ public class SorterManager implements Sorter{
 		if(vis0.overlaps(vis1)){
 			throw new IllegalArgumentException();
 		}
-		multitasker.run2(
-				() -> sort(vis0, srt),
-				() -> sort(vis1,srt));
+		if(vis0.size < vis1.size){
+			multitasker.run2(
+					() -> sort(vis1,srt),
+					() -> sort(vis0,srt));
+		}else{
+			multitasker.run2(
+					() -> sort(vis0,srt),
+					() -> sort(vis1,srt));
+		}
 	}
-	public void sort(VisualArray vis0, VisualArray vis1, VisualArray vis2, Sorter srt){
-		if(vis0.overlaps(vis1) || vis1.overlaps(vis2) || vis2.overlaps(vis0)){
+	public void sort(VisualArray a, VisualArray b, VisualArray c, Sorter srt){
+		if(a.overlaps(b) || b.overlaps(c) || c.overlaps(a)){
 			throw new IllegalArgumentException();
+		}
+		final VisualArray vis0,vis1,vis2;
+		if(a.size > b.size){//			0aa	bb0	ccc
+			if(a.size > c.size){// 		00a	bb0	cc0 els	0a0 b00 00c
+				vis0 = a;
+				if(b.size > c.size){//	00a	0b0	c00 els 00a	b00	0c0
+					vis1 = b;
+					vis2 = c;
+				}else{
+					vis1 = c;
+					vis2 = b;
+				}
+			}else{
+				vis0 = c;
+				vis1 = a;
+				vis2 = b;
+			}
+		}else{//						aa0 0bb ccc
+			if(a.size < c.size){//		a00 0bb 0cc els 0a0 00b c00
+				vis2 = a;
+				if(b.size < c.size){//	a00 0b0 00c els a00 00b 0c0
+					vis1 = b;
+					vis0 = c;
+				}else{
+					vis1 = c;
+					vis0 = b;
+				}
+			}else{
+				vis0 = b;
+				vis1 = a;
+				vis2 = c;
+			}
 		}
 		multitasker.run3(
 				() -> sort(vis0,srt),
