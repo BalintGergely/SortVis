@@ -226,7 +226,7 @@ public class SorterManager implements Sorter{
 			Sorter s = getSorter();
 			s.sort(vis, this);
 			if(!vis.localCheck()){
-				throw new IllegalStateException(s.getClass().getName()+" DEFECTED AT ARRAY SIZE "+vis.size);
+				throw new IllegalStateException(s.getClass().getName()+" \""+s.toString()+"\" DEFECTED AT ARRAY SIZE "+vis.size);
 			}
 		}
 	}
