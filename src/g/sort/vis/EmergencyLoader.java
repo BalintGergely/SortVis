@@ -6,17 +6,17 @@ import java.util.NoSuchElementException;
 /**
  * An emergency loader used when java.util.ServiceLoader defects.
  */
-public class EmergencyLoader implements Iterable<Sorter>{
-	private ArrayList<Sorter> cache = new ArrayList<>(count());
+public class EmergencyLoader implements Iterable<ConfigurableSorter>{
+	private ArrayList<ConfigurableSorter> cache = new ArrayList<>(count());
 	@Override
-	public Iterator<Sorter> iterator() {
-		return new Iterator<Sorter>(){
+	public Iterator<ConfigurableSorter> iterator() {
+		return new Iterator<ConfigurableSorter>(){
 			private int i = 0;
 			public boolean hasNext(){
 				return i < count();
 			}
 			@Override
-			public Sorter next() {
+			public ConfigurableSorter next() {
 				if(i == cache.size()){
 					synchronized(cache){
 						if(i == cache.size())
@@ -30,7 +30,7 @@ public class EmergencyLoader implements Iterable<Sorter>{
 	private static int count(){
 		return 8;
 	}
-	private static Sorter nThSorter(int n){
+	private static ConfigurableSorter nThSorter(int n){
 		switch(n){
 		case 0:return new SelectionSort();
 		case 1:return new InsertionSort();

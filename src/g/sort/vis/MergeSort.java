@@ -1,6 +1,6 @@
 package g.sort.vis;
 
-public class MergeSort implements Sorter{
+public class MergeSort extends ConfigurableSorter{
 	public MergeSort(){}
 	@Override
 	public void sort(VisualArray vis,Sorter srt) {

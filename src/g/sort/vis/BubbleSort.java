@@ -1,6 +1,6 @@
 package g.sort.vis;
 
-public class BubbleSort implements Sorter{
+public class BubbleSort extends ConfigurableSorter{
 	private boolean binary = false;
 	public BubbleSort() {}
 	public void sort(VisualArray vis,Sorter str) {

@@ -1,6 +1,6 @@
 package g.sort.vis;
 
-public class OddEvenSort implements Sorter{
+public class OddEvenSort extends ConfigurableSorter{
 	public OddEvenSort() {}
 	@Override
 	public void sort(VisualArray vis,Sorter srt) {

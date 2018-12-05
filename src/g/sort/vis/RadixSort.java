@@ -2,7 +2,7 @@ package g.sort.vis;
 
 import java.util.Arrays;
 
-public class RadixSort implements Sorter{
+public class RadixSort extends ConfigurableSorter{
 	private boolean inPlace = false;
 	private int base = 2;
 	public RadixSort() {}

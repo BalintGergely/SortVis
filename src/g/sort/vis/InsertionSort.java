@@ -1,6 +1,6 @@
 package g.sort.vis;
 
-public class InsertionSort implements Sorter{
+public class InsertionSort extends ConfigurableSorter{
 	public InsertionSort() {}
 	@Override
 	public void sort(VisualArray vis,Sorter srt) {

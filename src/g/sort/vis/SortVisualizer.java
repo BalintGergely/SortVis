@@ -11,6 +11,7 @@ import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Enumeration;
 import java.util.IdentityHashMap;
 
 import javax.sound.midi.Instrument;
@@ -47,8 +48,6 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
-
-import g.sort.vis.Node.NodeIterator;
 
 public class SortVisualizer extends JPanel implements DisplayInterface{
 	private static final String PILLARS = "Pillars",DOTS = "Dots",BRICKS = "Bricks",RAYS = "Rays",RAY_DOTS = "Ray dots",RAY_LINES = "Ray lines",
@@ -257,53 +256,8 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			sorterSubpanel.add(new JScrollPane(tree),BorderLayout.CENTER);
 			CardLayout crd = new CardLayout();
 			JPanel settingPanel = new JPanel(crd);
-			@SuppressWarnings("unchecked")
-			NodeIterator<Sorter> itr = ((Node<Sorter>)(Node<?>)manager.root).iterator();
-			int i = 0;
-			IdentityHashMap<Sorter,String> ihs = new IdentityHashMap<>();
-			while(itr.hasNext()){
-				Sorter str = itr.next().element;
-				int count = str.getNumberOptions();
-				if(count > 0){
-					i++;
-					JPanel panel = new JPanel(new GridLayout(0,2));
-					String sir = Integer.toString(i);
-					ihs.put(str, sir);
-					settingPanel.add(panel,sir);
-					for(int c = 0;c < count;c++){
-						final int index = c;
-						panel.add(new JLabel(str.getOptionName(index)+": "));
-						Class<?> cls = str.getOptionClass(index);
-						if(cls == Boolean.class){
-							JCheckBox box = new JCheckBox();
-							ButtonModel md = box.getModel();
-							md.setSelected((Boolean)str.getOption(index));
-							md.addChangeListener((ChangeEvent e) -> {
-								str.setOption(index, md.isSelected());
-							});
-							panel.add(box);
-						}else if(cls == Integer.class){
-							Integer[] obj = (Integer[])str.getOptions(index);
-							SpinnerNumberModel md = new SpinnerNumberModel((Integer)str.getOption(index), obj[0], obj[1], Integer.valueOf(1));
-							JSpinner sp = new JSpinner(md);
-							md.addChangeListener((ChangeEvent e) -> {
-								str.setOption(index, md.getNumber());
-							});
-							panel.add(sp);
-						}else{
-							Object[] obj = str.getOptions(index);
-							JComboBox<Object> box = new JComboBox<>(obj);
-							box.addActionListener((ActionEvent e) -> {
-								str.setOption(index, box.getSelectedItem());
-							});
-							box.setSelectedItem(str.getOption(index));
-							panel.add(box);
-						}
-					}
-				}else if(i == 0){
-					settingPanel.setVisible(false);
-				}
-			}
+			IdentityHashMap<Object,String> ihs = new IdentityHashMap<>();
+			recursiveAddConfig(ihs, manager.root, settingPanel, null);
 			if(settingPanel.getComponentCount() > 0){
 				sorterSubpanel.add(settingPanel,BorderLayout.PAGE_END);
 				selectedSorter.addTreeSelectionListener((TreeSelectionEvent e) -> {
@@ -369,6 +323,53 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			channel = null;
 		}
 		sidebar.add(Box.createGlue());
+	}
+	private static void recursiveAddConfig(IdentityHashMap<Object,String> smap,Node<?> node,JPanel settingPanel,String name){
+		if(node.element instanceof ConfigurableSorter){
+			ConfigurableSorter str = (ConfigurableSorter)node.element;
+			int count = str.getNumberOptions();
+			if(count > 0){
+				JPanel panel = new JPanel(new GridLayout(0,2));
+				name = Integer.toString(System.identityHashCode(str));
+				smap.put(str, name);
+				settingPanel.add(panel, name);
+				for(int c = 0;c < count;c++){
+					final int index = c;
+					panel.add(new JLabel(str.getOptionName(index)+": "));
+					Class<?> cls = str.getOptionClass(index);
+					if(cls == Boolean.class){
+						JCheckBox box = new JCheckBox();
+						ButtonModel md = box.getModel();
+						md.setSelected((Boolean)str.getOption(index));
+						md.addChangeListener((ChangeEvent e) -> {
+							str.setOption(index, md.isSelected());
+						});
+						panel.add(box);
+					}else if(cls == Integer.class){
+						Integer[] obj = (Integer[])str.getOptions(index);
+						SpinnerNumberModel md = new SpinnerNumberModel((Integer)str.getOption(index), obj[0], obj[1], Integer.valueOf(1));
+						JSpinner sp = new JSpinner(md);
+						md.addChangeListener((ChangeEvent e) -> {
+							str.setOption(index, md.getNumber());
+						});
+						panel.add(sp);
+					}else{
+						Object[] obj = str.getOptions(index);
+						JComboBox<Object> box = new JComboBox<>(obj);
+						box.addActionListener((ActionEvent e) -> {
+							str.setOption(index, box.getSelectedItem());
+						});
+						box.setSelectedItem(str.getOption(index));
+						panel.add(box);
+					}
+				}
+			}
+		}
+		if(name != null) smap.put(node.element, name);
+		Enumeration<? extends Node<?>> en = node.children();
+		while(en.hasMoreElements()){
+			recursiveAddConfig(smap, en.nextElement(), settingPanel, name);
+		}
 	}
 	public void display() {
 		frame.pack();

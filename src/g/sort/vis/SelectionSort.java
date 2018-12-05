@@ -1,6 +1,6 @@
 package g.sort.vis;
 
-public class SelectionSort implements Sorter{
+public class SelectionSort extends ConfigurableSorter{
 	private boolean binary = false;
 	public SelectionSort() {}
 	public void sort(VisualArray vis,Sorter srt) {

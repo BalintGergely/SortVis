@@ -1,5 +1,8 @@
 package g.sort.vis;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.VarHandle;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Objects;
@@ -15,6 +18,15 @@ import java.util.concurrent.locks.LockSupport;
  * Responsible for handling the Array, the effects and the Multitasker.
  */
 public class SorterManager implements Sorter{
+	private static final VarHandle TASK;
+	static {
+		try {
+			Lookup lk = MethodHandles.lookup();
+			TASK = lk.findVarHandle(SorterManager.class, "task", Runnable.class);
+		} catch (NoSuchFieldException | IllegalAccessException e) {
+			throw new ExceptionInInitializerError(e);
+		}
+	}
 	private class CustomPhaser extends Phaser{
 		private volatile Thread advancingThread;
 		private long nextWait;
@@ -93,7 +105,7 @@ public class SorterManager implements Sorter{
 	private CustomPhaser phaser;
 	private Random random = new Random();
 	private DisplayInterface didf;
-	private Runnable task;
+	private Runnable task;//WarHandle'd
 	
 	private BiIntConsumer ownEvent = (int a,int b) -> {
 		int dt = delayTime;
@@ -105,7 +117,7 @@ public class SorterManager implements Sorter{
 			if(b >= 0 && b < 128)didf.noteOn(b);
 		}
 	};
-	public final Node<Iterable<Sorter>> root;
+	public final Node<Iterable<ConfigurableSorter>> root;
 	private void run(){
 		while(true){
 			try{
@@ -120,7 +132,10 @@ public class SorterManager implements Sorter{
 						tsk.run();//When this method returns, no internal thread should run any task. At all.
 					}finally{
 						phaser.arriveAndDeregister();
-						task = null;
+						if(!TASK.compareAndSet(this,tsk,null)){
+							System.out.println("Task updated while working.");
+							//XXX Do not remove the debug here. Without this, the task field won't be set at all due to a Java bug. Try something else like LockSupport.parkNanos()
+						}
 					}
 					didf.running(false);
 				}
@@ -137,10 +152,10 @@ public class SorterManager implements Sorter{
 	public SorterManager(DisplayInterface didf) {
 		sorterMap = new IdentityHashMap<>();
 		this.didf = Objects.requireNonNull(didf);
-		final ServiceLoader<Sorter> ldr = ServiceLoader.load(Sorter.class);
+		final ServiceLoader<ConfigurableSorter> ldr = ServiceLoader.load(ConfigurableSorter.class);
 		int count = 0;
 		try{
-			Iterator<Sorter> itr = ldr.iterator();
+			Iterator<ConfigurableSorter> itr = ldr.iterator();
 			while(itr.hasNext()){
 				itr.next();
 				count++;
@@ -149,8 +164,8 @@ public class SorterManager implements Sorter{
 			e.printStackTrace();
 			count = 0;
 		}
-		root = new Node<>(count == 0 ? new EmergencyLoader() : new Iterable<Sorter>(){
-			public Iterator<Sorter> iterator(){
+		root = new Node<>(count == 0 ? new EmergencyLoader() : new Iterable<ConfigurableSorter>(){
+			public Iterator<ConfigurableSorter> iterator(){
 				return ldr.iterator();
 			}
 			public String toString(){
@@ -162,11 +177,14 @@ public class SorterManager implements Sorter{
 				() -> phaser = new CustomPhaser(),
 				this::run);
 	}
-	private void fill(Node<Iterable<Sorter>> str){
+	@SuppressWarnings("unchecked")
+	private void fill(Node<? extends Iterable<? extends Sorter>> str){
 		for(Sorter s : str.element){
-			Node<Iterable<Sorter>> node = str.createChild(s);
+			Node<? extends Sorter> node = str.createChild(s);
 			sorterMap.put(node, s);
-			fill(node);
+			if(node.element instanceof Iterable){
+				fill((Node<? extends Iterable<? extends Sorter>>)node);
+			}
 		}
 	}
 	public VisualArray getArray(){
@@ -208,7 +226,7 @@ public class SorterManager implements Sorter{
 			Sorter s = getSorter();
 			s.sort(vis, this);
 			if(!vis.localCheck()){
-				throw new IllegalStateException();
+				throw new IllegalStateException(s.getClass().getName()+" DEFECTED AT ARRAY SIZE "+vis.size);
 			}
 		}
 	}

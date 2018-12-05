@@ -11,34 +11,32 @@ import javax.swing.tree.TreeNode;
  * 
  * @param <E>
  */
-public class Node<E> implements TreeNode,Iterable<Node<E>>{
-	public final Node<? super E> parent;
+public class Node<E> implements TreeNode,Iterable<Node<?>>{
+	public final Node<?> parent;
 	public final E element;
-	private final Vector<Node<E>> children;
+	private final Vector<Node<?>> children;
 	public Node(E element){
 		this.parent = null;
 		this.element = element;
 		children = new Vector<>();
 	}
-	private Node(Node<? super E> pr,E element){
+	private Node(Node<?> pr,E element){
 		this.parent = pr;
 		this.element = element;
 		children = new Vector<>();
 	}
-	@SuppressWarnings("unchecked")
-	public <A extends E> Node<A> createChildAt(int index,A element){
+	public <A> Node<A> createChildAt(int index,A element){
 		Node<A> n = new Node<>(this,element);
-		children.add(index, (Node<E>)n);
+		children.add(index, n);
 		return n;
 	}
-	@SuppressWarnings("unchecked")
-	public <A extends E> Node<A> createChild(A element){
+	public <A> Node<A> createChild(A element){
 		Node<A> n = new Node<>(this,element);
-		children.add((Node<E>)n);
+		children.add(n);
 		return n;
 	}
 	@Override
-	public Node<E> getChildAt(int childIndex) {
+	public Node<?> getChildAt(int childIndex) {
 		return children.get(childIndex);
 	}
 	@Override
@@ -62,18 +60,18 @@ public class Node<E> implements TreeNode,Iterable<Node<E>>{
 		return children.isEmpty();
 	}
 	@Override
-	public Enumeration<? extends TreeNode> children() {
+	public Enumeration<? extends Node<?>> children() {
 		return Collections.enumeration(children);
 	}
 	public String toString(){
 		return element.toString();
 	}
-	public static class NodeIterator<E> implements Iterator<Node<E>>{
-		Node<E> node;
-		private Iterator<Node<E>> itr;
-		private NodeIterator<E> sub;
+	public static class NodeIterator implements Iterator<Node<?>>{
+		Node<?> node;
+		private Iterator<Node<?>> itr;
+		private NodeIterator sub;
 		int index;
-		public NodeIterator(Node<E> nd){
+		public NodeIterator(Node<?> nd){
 			itr = nd.children.iterator();
 		}
 		@Override
@@ -84,17 +82,17 @@ public class Node<E> implements TreeNode,Iterable<Node<E>>{
 			return sub.hasNext();
 		}
 		@Override
-		public Node<E> next() {
+		public Node<?> next() {
 			if(sub == null || !sub.hasNext()){
-				Node<E> n = itr.next();
-				sub = n.children.isEmpty() ? null : new NodeIterator<>(n);
+				Node<?> n = itr.next();
+				sub = n.children.isEmpty() ? null : new NodeIterator(n);
 				return n;
 			}
 			return sub.next();
 		}
 	}
 	@Override
-	public NodeIterator<E> iterator() {
-		return new NodeIterator<E>(this);
+	public NodeIterator iterator() {
+		return new NodeIterator(this);
 	}
 }

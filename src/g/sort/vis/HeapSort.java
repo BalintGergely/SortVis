@@ -1,6 +1,6 @@
 package g.sort.vis;
 
-public class HeapSort implements Sorter{
+public class HeapSort extends ConfigurableSorter{
 	public HeapSort() {}
 	@Override
 	public void sort(VisualArray vis,Sorter srt) {
