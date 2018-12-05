@@ -29,7 +29,7 @@ public class SorterManager implements Sorter{
 	}
 	private class CustomPhaser extends Phaser{
 		private volatile Thread advancingThread;
-		private long nextWait;
+		private long latestCheck;
 		/**
 		 * This custom onAdvance implementation is used to block progress for each operation.
 		 */
@@ -39,15 +39,15 @@ public class SorterManager implements Sorter{
 				if(timedPermit){
 					try{
 						if(dt > 0){//Block for a certain amount of time
-							dt = TimeUnit.MILLISECONDS.toNanos(dt);
+							dt = TimeUnit.MILLISECONDS.toNanos(dt)+latestCheck;
 							do{
 								if(Thread.interrupted()){
 									Thread.currentThread().interrupt();
 									break;
 								}
 								didf.tick();
-								LockSupport.parkNanos(Math.min(nextWait-System.nanoTime(), mpt));
-							}while(System.nanoTime() < nextWait);
+								LockSupport.parkNanos(Math.min(dt-System.nanoTime(), mpt));
+							}while(System.nanoTime() < dt);
 						}else if(dt <= 0){//Call didf.tick() once per a specified number of frames
 							if(dt == 0 || (phase % (-dt)) == 0){
 								didf.tick();
@@ -76,9 +76,7 @@ public class SorterManager implements Sorter{
 					e.printStackTrace();
 				}
 			}finally{
-				if(dt > 0){
-					nextWait = System.nanoTime()+dt;
-				}
+				latestCheck = System.nanoTime();
 			}
 			return false;
 		}
@@ -101,20 +99,22 @@ public class SorterManager implements Sorter{
 	/**
 	 * If false, the user stopped the procedure and we have to wait until either interrupted or stepped.
 	 */
-	private boolean timedPermit;
+	private boolean timedPermit,blockAtWrite = true,blockAtRead = true;
 	private CustomPhaser phaser;
 	private Random random = new Random();
 	private DisplayInterface didf;
 	private Runnable task;//WarHandle'd
 	
-	private BiIntConsumer ownEvent = (int a,int b) -> {
-		int dt = delayTime;
-		int phase = multitasker.phase();
-		if(dt >= 0 || (phase % (-dt)) == 0){
-			a = a < 0 ? -1 : (a-array.min)*127/array.range;
-			b = b < 0 ? -1 : (b-array.min)*127/array.range;
-			if(a >= 0 && a < 128)didf.noteOn(a);
-			if(b >= 0 && b < 128)didf.noteOn(b);
+	private BiIntBooleanConsumer ownEvent = (int a,int b,boolean c) -> {
+		if(c ? blockAtWrite : blockAtRead){
+			int dt = delayTime;
+			int phase = multitasker.phase();
+			if(dt >= 0 || (phase % (-dt)) == 0){
+				a = a < 0 ? -1 : (a-array.min)*127/array.range;
+				b = b < 0 ? -1 : (b-array.min)*127/array.range;
+				if(a >= 0 && a < 128)didf.noteOn(a);
+				if(b >= 0 && b < 128)didf.noteOn(b);
+			}
 		}
 	};
 	public final Node<Iterable<ConfigurableSorter>> root;
@@ -214,15 +214,7 @@ public class SorterManager implements Sorter{
 		if(Thread.interrupted()){
 			throw new RuntimeException(new InterruptedException());
 		}
-		switch(vis.size){
-		case 3:vis.compareAndSwap(0, 1);
-				if(vis.compareAndSwap(1, 2) < 0){
-					break;
-				}
-		case 2:vis.compareAndSwap(0, 1);
-		case 1:
-		case 0:break;
-		default:
+		if(!Sorter.guardedSort(vis)){
 			Sorter s = getSorter();
 			s.sort(vis, this);
 			if(!vis.localCheck()){
@@ -318,6 +310,18 @@ public class SorterManager implements Sorter{
 	public void stepUnlock(){
 		timedPermit = true;
 		stepDo();
+	}
+	public boolean isWriteBlockEnabled(){
+		return blockAtWrite;
+	}
+	public boolean isReadBlockEnabled(){
+		return blockAtRead;
+	}
+	public void setWriteBlockEnabled(boolean wbe){
+		blockAtWrite = wbe;
+	}
+	public void setReadBlockEnabled(boolean rbe){
+		blockAtRead = rbe;
 	}
 	public void shuffle(boolean notify){
 		if(array != null){

@@ -1,7 +1,7 @@
 package g.sort.vis;
 
 public class InsertionSort extends ConfigurableSorter{
-	public InsertionSort() {}
+	public InsertionSort(){};
 	@Override
 	public void sort(VisualArray vis,Sorter srt) {
 		int i = 1;

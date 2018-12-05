@@ -20,6 +20,11 @@ public interface DisplayInterface {
 	 */
 	public void noteOn(int note);
 	/**
+	 * Releases the specified note in the Synthesizer.
+	 * @param note
+	 */
+	public void noteOff(int note);
+	/**
 	 * Releases all notes in the Synthesizer.
 	 */
 	public void notesOff();

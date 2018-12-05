@@ -1,47 +1,58 @@
 package g.sort.vis;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.Objects;
 /**
  * An emergency loader used when java.util.ServiceLoader defects.
  */
 public class EmergencyLoader implements Iterable<ConfigurableSorter>{
-	private ArrayList<ConfigurableSorter> cache = new ArrayList<>(count());
+	private static final Class<?>[] CLASSES = new Class<?>[] {
+		SelectionSort.class,
+		InsertionSort.class,
+		BubbleSort.class,
+		OddEvenSort.class,
+		MergeSort.class,
+		QuickSort.class,
+		HeapSort.class,
+		RadixSort.class,
+		GravitySort.class,
+		BitonicSort.class
+	};
+	private static ConfigurableSorter nThSorter(int n){
+		@SuppressWarnings("unchecked")
+		Class<? extends ConfigurableSorter> cls = (Class<? extends ConfigurableSorter>)CLASSES[n];
+		try {
+			return Objects.requireNonNull((ConfigurableSorter)cls.getMethod("provider").invoke(null));
+		} catch (NoSuchMethodException e) {
+			
+		} catch (Throwable e) {
+			throw new Error(e);
+		}
+		try {
+			return cls.getConstructor().newInstance();
+		} catch (Throwable e) {
+			throw new Error(e);
+		}
+	}
+	private final ConfigurableSorter[] sorters;
+	public EmergencyLoader(){
+		sorters = new ConfigurableSorter[CLASSES.length];
+		for(int i = 0;i < CLASSES.length;i++){
+			sorters[i] = nThSorter(i);
+		}
+	}
 	@Override
 	public Iterator<ConfigurableSorter> iterator() {
 		return new Iterator<ConfigurableSorter>(){
 			private int i = 0;
 			public boolean hasNext(){
-				return i < count();
+				return i < sorters.length;
 			}
 			@Override
 			public ConfigurableSorter next() {
-				if(i == cache.size()){
-					synchronized(cache){
-						if(i == cache.size())
-						cache.add(nThSorter(i));
-					}
-				}
-				return cache.get(i++);
+				return sorters[i++];
 			}
 		};
-	}
-	private static int count(){
-		return 8;
-	}
-	private static ConfigurableSorter nThSorter(int n){
-		switch(n){
-		case 0:return new SelectionSort();
-		case 1:return new InsertionSort();
-		case 2:return new BubbleSort();
-		case 3:return new OddEvenSort();
-		case 4:return new MergeSort();
-		case 5:return new QuickSort();
-		case 6:return new HeapSort();
-		case 7:return new RadixSort();
-		default:throw new NoSuchElementException();
-		}
 	}
 	public String toString(){
 		return "Random (!)";

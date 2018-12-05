@@ -8,6 +8,11 @@ public enum ValueSetGenerator {
 			return left;
 		}
 	},
+	DESCENDING(){
+		public int apply(int left, int right,Random rng){
+			return right-left-1;
+		}
+	},
 	RANDOM_VALUES(){
 		@Override
 		public int apply(int index, int size, Random random) {

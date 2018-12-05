@@ -94,6 +94,7 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 	private SpinnerNumberModel	arraySizeModel = new SpinnerNumberModel(128, 3, Integer.MAX_VALUE, 64),
 								threadCountModel = new SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1);
 	private final SorterManager manager;
+	private boolean stepFlag = false;
 	Synthesizer synthesizer;
 	MidiChannel channel;
 	private Dimension createPreferredSize(){
@@ -143,13 +144,21 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			channel.noteOn(note, 100);
 		}
 	}
+	public void noteOff(int note){
+		if(channel != null){
+			channel.noteOff(note);
+		}
+	}
 	public void notesOff(){
 		if(channel != null){
 			channel.allNotesOff();
 		}
 	}
 	public void running(boolean start){
-		startModel.setSelected(start);
+		if(!(stepFlag && start)){
+			startModel.setSelected(start);
+		}
+		stepFlag = false;
 	}
 	private SortVisualizer() {
 		super(null,false);
@@ -196,6 +205,15 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			threadCountModel.addChangeListener((ChangeEvent e) -> {
 				manager.setThreadCount(threadCountModel.getNumber().intValue());
 			});
+			JCheckBox bowBox = new JCheckBox("Block on write",true),borBox = new JCheckBox("Block on read",true);
+			bowBox.getModel().addChangeListener((ChangeEvent e) -> {
+				manager.setWriteBlockEnabled(bowBox.isSelected());
+			});
+			borBox.getModel().addChangeListener((ChangeEvent e) -> {
+				manager.setReadBlockEnabled(borBox.isSelected());
+			});
+			arraySubpanel.add(bowBox);
+			arraySubpanel.add(borBox);
 			JButton create = new JButton("Create");
 			create.addActionListener((ActionEvent e) -> {
 				manager.recreate((ValueSetGenerator)valueSetModel.getSelectedItem(), arraySizeModel.getNumber().intValue());
@@ -241,6 +259,7 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			sorterSubpanel.add(startButton,BorderLayout.PAGE_START);
 			stepButton.addActionListener((ActionEvent e) -> {
 				startModel.setSelected(false);
+				stepFlag = true;
 				if(manager.isTaskRunning()){
 					manager.stepDo();
 				}else{

@@ -9,7 +9,6 @@ import java.util.function.IntUnaryOperator;
  * Be sure to always call the right method on this because future implementations may count the number of calls to each method.
  */
 public final class VisualArray{
-	public static final BiIntConsumer EMPTY = (int a,int b) -> {};
 	/**
 	 * min: Smallest value in array<br>
 	 * max: Largest value in array<br>
@@ -26,12 +25,12 @@ public final class VisualArray{
 	private final long[] mainCooldown;
 	private final long[] shanCooldown;
 	private final long visualCooldown = TimeUnit.MILLISECONDS.toNanos(200);
-	public VisualArray(IntUnaryOperator valueSupplier,int length,BiIntConsumer event) {
+	public VisualArray(IntUnaryOperator valueSupplier,int length,BiIntBooleanConsumer event) {
 		if(length < 3){
 			throw new IllegalArgumentException();
 		}
 		this.offset = 0;
-		this.event = event == null ? EMPTY : event;
+		this.event = event == null ? BiIntBooleanConsumer.EMPTY : event;
 		valuePool = new int[length];
 		for(int i = 0;i < length;i++){
 			if((valuePool[i] = valueSupplier.applyAsInt(i)) < 0){
@@ -132,7 +131,7 @@ public final class VisualArray{
 		setCooldown(as,a,cd);
 		setCooldown(bs,b,cd);
 		int x = array(as)[offset+a],y = array(bs)[offset+b];
-		fireEvent(x,y);
+		fireEvent(x,y,false);
 		return Integer.compare(x,y);
 	}
 	/**
@@ -170,11 +169,11 @@ public final class VisualArray{
 		setCooldown(bs,b,cd);
 		setCooldown(cs,c,cd);
 		int i = array(as)[offset+a],bi = array(bs)[offset+b],ci = array(cs)[offset+c];
-		fireEvent(i,bi);
+		fireEvent(i,bi,false);
 		if(i < bi){
 			return -1;
 		}
-		fireEvent(i,ci);
+		fireEvent(i,ci,false);
 		if(i > ci){
 			return 1;
 		}
@@ -215,7 +214,7 @@ public final class VisualArray{
 			aa[a] = y;
 			bb[b] = x;
 		}
-		fireEvent(x,y);
+		fireEvent(x,y,true);
 		return i;
 	}
 	/**
@@ -246,7 +245,7 @@ public final class VisualArray{
 	public void pingValue(int i){
 		checkRange(i);
 		setCooldown(false,i,System.nanoTime()+visualCooldown);
-		fireEvent(mainArray[offset+i],-1);
+		fireEvent(mainArray[offset+i],-1,false);
 	}
 	/**
 	 * Sets the specified value in the specified array to cooldown. Fires an event on the value.
@@ -256,7 +255,7 @@ public final class VisualArray{
 	public void pingValue(boolean s,int i){
 		checkRange(i);
 		setCooldown(s,i,System.nanoTime()+visualCooldown);
-		fireEvent(array(s)[offset+i],-1);
+		fireEvent(array(s)[offset+i],-1,false);
 	}
 	/**
 	 * Sets the specified values in the main array to cooldown. Does not fire any events.
@@ -306,7 +305,39 @@ public final class VisualArray{
 		int x = aa[a],y = bb[b];
 		aa[a] = y;
 		bb[b] = x;
-		fireEvent(x,y);
+		fireEvent(x,y,true);
+	}
+	/**
+	 * Increments the value at the specified index in the specified array by one. Does not fire an event.
+	 * @param s
+	 * @param index
+	 * @return The updated value
+	 */
+	public int incrementAndGet(boolean s,int index){
+		checkRange(index);
+		setCooldown(s, index, System.nanoTime()+visualCooldown);
+		index += offset;
+		int v = array(s)[index]+1;
+		if(v > max){
+			throw new IllegalStateException();
+		}
+		return array(s)[index] = v;
+	}
+	/**
+	 * Decrements the value at the specified index in the specified array by one. Does not fire an event.
+	 * @param s
+	 * @param index
+	 * @return the updated value
+	 */
+	public int decrementAndGet(boolean s,int index){
+		checkRange(index);
+		setCooldown(s, index, System.nanoTime()+visualCooldown);
+		index += offset;
+		int v = array(s)[index]-1;
+		if(v < min){
+			throw new IllegalStateException();
+		}
+		return array(s)[index] = v;
 	}
 	/**
 	 * Copies the value of the first index to the second index in the main array. Fires an event for the value being copied.
@@ -329,7 +360,7 @@ public final class VisualArray{
 		long cd = System.nanoTime()+visualCooldown;
 		setCooldown(source,sp,cd);
 		setCooldown(target,tp,cd);
-		fireEvent(array(target)[offset+tp] = array(source)[offset+sp],-1);
+		fireEvent(array(target)[offset+tp] = array(source)[offset+sp],-1,true);
 	}
 	/**
 	 * Copies a sequence of values from the source index to the target index in the main array. Does not fire an event.
@@ -380,7 +411,7 @@ public final class VisualArray{
 		long cd = System.nanoTime()+visualCooldown;
 		Arrays.fill(target ? shanCooldown : mainCooldown, offset+tp, offset+tp+len, cd);
 		setCooldown(source,sp,cd);
-		fireEvent(v,-1);
+		fireEvent(v,-1,true);
 	}
 	public int getColor(int i){
 		checkRange(i);
@@ -437,10 +468,10 @@ public final class VisualArray{
 			mainArray[t] = x;
 			if(notify){
 				mainCooldown[i] = mainCooldown[t] = System.nanoTime()+visualCooldown;
-				fireEvent(x,y);
+				fireEvent(x,y,true);
 			}
 		}
-		fireEvent(-1,-1);
+		fireEvent(-1,-1,true);
 	}
 	/**
 	 * Ya can't stop the MAGÍC!<br>
@@ -494,7 +525,7 @@ public final class VisualArray{
 				}
 			}
 			if(f){
-				fireEvent(x,y);
+				fireEvent(x,y,true);
 			}
 		}while(b);
 	}
@@ -529,12 +560,12 @@ public final class VisualArray{
 				}
 			}
 			mainCooldown[i] = System.nanoTime()+visualCooldown;
-			fireEvent(val,-1);
+			fireEvent(val,-1,false);
 		}
 		if(!err){
 			Arrays.fill(mainColor, 0);
 		}
-		fireEvent(-1,-1);
+		fireEvent(-1,-1,true);
 	}
 	/**
 	 * @return true if the content of this visual array is in ascending order.
@@ -551,9 +582,9 @@ public final class VisualArray{
 		}
 		return true;
 	}
-	private BiIntConsumer event;
-	public void fireEvent(int a,int b){
-		event.accept(a, b);
+	private BiIntBooleanConsumer event;
+	public void fireEvent(int a,int b,boolean c){
+		event.accept(a, b, c);
 	}
 	/**
 	 * Returns a VisualArray representing a sub-section of this array. Changes to the returned array will be reflected in this array and vice-versa.

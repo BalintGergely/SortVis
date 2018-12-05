@@ -58,7 +58,7 @@ public class RadixSort extends ConfigurableSorter{
 			vis.copy(1, 0, t);
 			vis.copy(true, 0, false, t, 1);
 			vis.pingValues(counts);
-			vis.fireEvent(value, -1);
+			vis.fireEvent(value, -1, true);
 			while(v > 0){
 				v--;
 				counts[v]--;
