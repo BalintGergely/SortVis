@@ -11,9 +11,9 @@ public class InsertionSort extends ConfigurableSorter{
 			while(x > 0 && vis.compare(x-1, i) > 0){
 				x--;
 			}
-			vis.copy(false,i, true, x, 1);
+			vis.copy(false,i, true, i, 1);
 			vis.copy(false,x, false, x+1, i-x);
-			vis.copy(true ,x, false, x, 1);
+			vis.copy(true ,i, false, x);
 			vis.setColor(i, 0);
 			i++;
 		}
