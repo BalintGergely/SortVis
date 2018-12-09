@@ -11,6 +11,7 @@ import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.IdentityHashMap;
 
@@ -31,6 +32,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -39,10 +41,12 @@ import javax.swing.JSpinner;
 import javax.swing.JToggleButton;
 import javax.swing.JToggleButton.ToggleButtonModel;
 import javax.swing.JTree;
+import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
+import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.DefaultTreeSelectionModel;
@@ -329,14 +333,44 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			}
 			channel.setChannelPressure(127);
 			Instrument[] ins = synthesizer.getAvailableInstruments();
-			for(int i = 0;i < ins.length;i++){
-				if(ins[i].getName().startsWith("Saw Wave")){
-					synthesizer.loadInstrument(ins[i]);
-					channel.programChange(ins[i].getPatch().getProgram());
-					break a;
+			JList<Instrument> insList = new JList<>(ins);
+			insList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			boolean w = true;
+			String start = "Saw Wave";
+			{
+				Calendar cld = Calendar.getInstance();
+				if(cld.get(Calendar.MONTH) == 3 && cld.get(Calendar.DAY_OF_MONTH) == 1){
+					start = "Piano 1";
 				}
 			}
-			channel = null;
+			for(int i = 0;i < ins.length;i++){
+				synthesizer.loadInstrument(ins[i]);
+				if(w || ins[i].getName().startsWith(start)){
+					insList.setSelectedIndex(i);
+					channel.programChange(ins[i].getPatch().getProgram());
+					w = false;
+				}
+			}
+			if(w){
+				insList.setSelectedIndex(0);
+				channel.programChange(ins[0].getPatch().getProgram());
+			}
+			insList.addListSelectionListener((ListSelectionEvent e) -> {
+				int index = e.getFirstIndex();
+				if(index >= 0){
+					channel.programChange(ins[index].getPatch().getProgram());
+					manager.check();
+				}
+			});
+			JScrollPane scr = new JScrollPane(insList);
+			scr.setVisible(false);
+			frame.add(scr, BorderLayout.LINE_END);
+			JToggleButton iss = new JToggleButton("Select MIDI instrument");
+			iss.addActionListener((ActionEvent e) -> {
+				scr.setVisible(iss.isSelected());
+				frame.revalidate();
+			});
+			sidebar.add(iss);
 		} catch (MidiUnavailableException e) {
 			e.printStackTrace();
 			channel = null;

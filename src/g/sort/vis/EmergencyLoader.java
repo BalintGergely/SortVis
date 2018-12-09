@@ -9,6 +9,7 @@ public class EmergencyLoader implements Iterable<ConfigurableSorter>{
 	private static final Class<?>[] CLASSES = new Class<?>[] {
 		SelectionSort.class,
 		InsertionSort.class,
+		GnomeSort.class,
 		BubbleSort.class,
 		OddEvenSort.class,
 		MergeSort.class,
