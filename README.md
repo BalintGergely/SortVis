@@ -6,4 +6,4 @@ http://panthema.net/2013/sound-of-sorting/
 
 This is just my take on it.
 
-Requires Java 10 at least.
+Requires at least Java 10.
