@@ -460,15 +460,17 @@ public final class VisualArray{
 		 * Because you have a shuffled sequence you don't want to disturb and a not shuffled sequence you want to consume. Except, both are in the same array.
 		 */
 		int i = size;
-		while(i > 2){
-			i--;
+		while(i > 1){
 			int t = random.nextInt(i);
-			int x = mainArray[i],y = mainArray[t];
-			mainArray[i] = y;
-			mainArray[t] = x;
-			if(notify){
-				mainCooldown[i] = mainCooldown[t] = System.nanoTime()+visualCooldown;
-				fireEvent(x,y,true);
+			i--;
+			if(t != i){
+				int x = mainArray[i],y = mainArray[t];
+				mainArray[i] = y;
+				mainArray[t] = x;
+				if(notify){
+					mainCooldown[i] = mainCooldown[t] = System.nanoTime()+visualCooldown;
+					fireEvent(x,y,true);
+				}
 			}
 		}
 		fireEvent(-1,-1,true);
