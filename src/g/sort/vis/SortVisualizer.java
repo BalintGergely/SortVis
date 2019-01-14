@@ -359,7 +359,9 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 				int index = e.getFirstIndex();
 				if(index >= 0){
 					channel.programChange(ins[index].getPatch().getProgram());
-					manager.check();
+					if(!manager.isTaskRunning()){
+						manager.check();
+					}
 				}
 			});
 			JScrollPane scr = new JScrollPane(insList);
