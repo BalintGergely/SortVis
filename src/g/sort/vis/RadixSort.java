@@ -1,13 +1,15 @@
 package g.sort.vis;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 public class RadixSort extends ConfigurableSorter{
 	private boolean inPlace = false;
 	private int base = 2;
 	public RadixSort() {}
 
-	public void sort(VisualArray vis,Sorter srt) {
+	public CompletionStage<?> sort(VisualArray vis,Sorter srt, Executor exe) {
 		int[] c = new int[base];
 		int m = 1;
 		while(m <= vis.max){
@@ -22,6 +24,7 @@ public class RadixSort extends ConfigurableSorter{
 			}
 			m *= p;
 		}
+		return COMPLETED_STAGE;
 	}
 	public void sortOutOfPlace(VisualArray vis,int[] counts,int d,int p){
 		Arrays.fill(counts, 0);

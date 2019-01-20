@@ -1,9 +1,12 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+
 public class SelectionSort extends ConfigurableSorter{
 	private boolean binary = false;
 	public SelectionSort() {}
-	public void sort(VisualArray vis,Sorter srt) {
+	public CompletionStage<?> sort(VisualArray vis,Sorter srt, Executor exe) {
 		int a = 0,b = vis.size;
 		while(a < b){
 			if(a > 0)vis.setColor(a-1, 0xff00ff00);
@@ -35,6 +38,7 @@ public class SelectionSort extends ConfigurableSorter{
 			a++;
 		}
 		if(b < vis.size)vis.setColor(b, 0);
+		return COMPLETED_STAGE;
 	}
 	@Override
 	public int getNumberOptions() {

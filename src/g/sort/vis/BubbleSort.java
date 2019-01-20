@@ -1,9 +1,12 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+
 public class BubbleSort extends ConfigurableSorter{
 	private boolean binary = false;
 	public BubbleSort() {}
-	public void sort(VisualArray vis,Sorter str) {
+	public CompletionStage<?> sort(VisualArray vis,Sorter str, Executor exe) {
 		int a = 0,b = vis.size;
 		while(a < b){
 			boolean m = true;
@@ -24,6 +27,7 @@ public class BubbleSort extends ConfigurableSorter{
 			}
 			b--;
 		}
+		return COMPLETED_STAGE;
 	}
 	@Override
 	public int getNumberOptions() {

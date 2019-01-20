@@ -1,9 +1,12 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+
 public class HeapSort extends ConfigurableSorter{
 	public HeapSort() {}
 	@Override
-	public void sort(VisualArray vis,Sorter srt) {
+	public CompletionStage<?> sort(VisualArray vis,Sorter srt, Executor exe) {
 		//Step 1: Heapify: Find the lowest element that has children and sift down.
 		//x's parent is (x-1)/2
 		//x's children is x*2+1
@@ -36,6 +39,7 @@ public class HeapSort extends ConfigurableSorter{
 			vis.setColor(len, 0);
 			vis.swap(0, len);
 		}
+		return COMPLETED_STAGE;
 	}
 	public void siftDown(VisualArray vis,int index,int len){
 		while(true){

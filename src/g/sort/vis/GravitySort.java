@@ -1,9 +1,12 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+
 public class GravitySort extends ConfigurableSorter{
 	public GravitySort() {}
 	@Override
-	public void sort(VisualArray vis, Sorter srt) {
+	public CompletionStage<?> sort(VisualArray vis, Sorter srt, Executor exe) {
 		vis.copy(false, 0, true, 0, vis.size);
 		for(int i = 0;i < vis.size;i++){
 			vis.setColor(true, i, 0x50808080);
@@ -27,6 +30,7 @@ public class GravitySort extends ConfigurableSorter{
 			if(x != vis.size)vis.fireEvent(h, -1, true);
 		}
 		vis.clearVisuals();
+		return COMPLETED_STAGE;
 	}
 	public String toString(){
 		return "Gravity Sort";

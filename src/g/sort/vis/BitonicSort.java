@@ -1,9 +1,13 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+
 public class BitonicSort extends ConfigurableSorter{
 	@Override
-	public void sort(VisualArray vis, Sorter srt) {
+	public CompletionStage<?> sort(VisualArray vis, Sorter srt, Executor exe) {
 		preSort(vis,false);
+		return COMPLETED_STAGE;
 	}
 	public void preSort(VisualArray vis,boolean direction){
 		if(vis.size > 1){

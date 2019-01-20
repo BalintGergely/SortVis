@@ -2,6 +2,9 @@ package g.sort.vis;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class QuickSort extends ConfigurableSorter{
@@ -50,8 +53,8 @@ public class QuickSort extends ConfigurableSorter{
 	public static final String	PIVOT_FIRST = "First element",PIVOT_LAST = "Last element",PIVOT_MIDDLE = "Middle element",PIVOT_MEDIAN = "Median of three",PIVOT_RANDOM = "Random";
 	public QuickSort() {}
 	@Override
-	public void sort(VisualArray vis,Sorter srt){
-		subSorters.get(ThreadLocalRandom.current().nextInt(9)).sort(vis, srt);
+	public CompletionStage<?> sort(VisualArray vis,Sorter srt, Executor exe){
+		return subSorters.get(ThreadLocalRandom.current().nextInt(9)).sort(vis, srt, exe);
 	}
 	private String pivotRule = PIVOT_MIDDLE;
 	public void pickPivot(VisualArray vis,int off,int len,int target){
@@ -129,12 +132,18 @@ public class QuickSort extends ConfigurableSorter{
 			return name;
 		}
 		@Override
-		public void sort(VisualArray vis, Sorter srt) {
-			sorter.sort(vis, srt);
+		public CompletionStage<?> sort(VisualArray vis, Sorter srt, Executor exe) {
+			return sorter.sort(vis, srt, exe);
 		}
 	}
+	private static CompletionStage<?> sortTask(VisualArray vis,Sorter source,Sorter target,Executor exe){
+		if(exe == null){
+			return target.sort(vis, source, exe);
+		}
+		return CompletableFuture.runAsync(() -> target.sort(vis, source, exe), exe);
+	}
 	private final Sorter
-	SLR = new AbstractSibling("Twins Left-Right",(VisualArray vis,Sorter srt) -> {
+	SLR = new AbstractSibling("Twins Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -156,11 +165,14 @@ public class QuickSort extends ConfigurableSorter{
 		}
 		vis.setColor(pivot, 0);
 		vis.swap(left, pivot);
-		vis.setColor(left, 0xff00ff00);
-		srt.sort(vis.subArray(0, left),vis.subArray(left+1, vis.size-left-1),this);
-		vis.setColor(left, 0);
+		final int afin = left;
+		vis.setColor(afin, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(0, left),this,srt,exe),
+				sortTask(vis.subArray(left+1, vis.size-left-1),this,srt,exe),
+				() -> vis.setColor(afin,0));
 	}),
-	SLL = new AbstractSibling("Twins Left-Left",(VisualArray vis,Sorter srt) -> {
+	SLL = new AbstractSibling("Twins Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -174,11 +186,14 @@ public class QuickSort extends ConfigurableSorter{
 		}
 		vis.setColor(pivot, 0);
 		vis.swap(lefta, pivot);
-		vis.setColor(lefta, 0xff00ff00);
-		srt.sort(vis.subArray(0, lefta),vis.subArray(lefta+1, vis.size-lefta-1),this);
-		vis.setColor(lefta, 0);
+		final int afin = lefta;
+		vis.setColor(afin, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(0, lefta),this,srt,exe),
+				sortTask(vis.subArray(lefta+1, vis.size-lefta-1),this,srt,exe),
+				() -> vis.setColor(afin, 0));
 	}),
-	SRR = new AbstractSibling("Twins Right-Right",(VisualArray vis,Sorter srt) -> {
+	SRR = new AbstractSibling("Twins Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = 0;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -193,11 +208,14 @@ public class QuickSort extends ConfigurableSorter{
 		rightb--;
 		vis.setColor(pivot, 0);
 		vis.swap(rightb, pivot);
-		vis.setColor(rightb, 0xff00ff00);
-		srt.sort(vis.subArray(rightb+1, vis.size-rightb-1),vis.subArray(0, rightb),this);
-		vis.setColor(rightb, 0);
+		final int afin = rightb;
+		vis.setColor(afin, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(rightb+1, vis.size-rightb-1),this,srt,exe),
+				sortTask(vis.subArray(0, rightb),this,srt,exe),
+				() -> vis.setColor(afin, 0));
 	}),
-	TLR = new AbstractSibling("Ternary Left-Right",(VisualArray vis,Sorter srt) -> {
+	TLR = new AbstractSibling("Ternary Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -231,13 +249,18 @@ public class QuickSort extends ConfigurableSorter{
 			righta++;
 			rightb++;
 		}
-		vis.setColor(leftb, 0xff00ff00);
-		vis.setColor(righta-1, 0xff00ff00);
-		srt.sort(vis.subArray(0, leftb),vis.subArray(righta, vis.size-righta),this);
-		vis.setColor(leftb, 0);
-		vis.setColor(righta-1, 0);
+		final int afin = leftb,bfin = righta-1;
+		vis.setColor(afin, 0xff00ff00);
+		vis.setColor(bfin, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(0, leftb),this,srt,exe),
+				sortTask(vis.subArray(righta, vis.size-righta),this,srt,exe),
+				() -> {
+					vis.setColor(afin, 0);
+					vis.setColor(bfin, 0);
+				});
 	}),
-	TLL = new AbstractSibling("Ternary Left-Left",(VisualArray vis,Sorter srt) -> {
+	TLL = new AbstractSibling("Ternary Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -256,13 +279,18 @@ public class QuickSort extends ConfigurableSorter{
 			right++;
 			leftb++;
 		}
-		vis.setColor(lefta, 0xff00ff00);
-		vis.setColor(leftb-1, 0xff00ff00);
-		srt.sort(vis.subArray(0, lefta),vis.subArray(leftb, vis.size-leftb),this);
-		vis.setColor(lefta, 0);
-		vis.setColor(leftb-1, 0);
+		final int afin = lefta,bfin = leftb-1;
+		vis.setColor(afin, 0xff00ff00);
+		vis.setColor(bfin, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(0, lefta),this,srt,exe),
+				sortTask(vis.subArray(leftb, vis.size-leftb),this,srt,exe),
+				() -> {
+					vis.setColor(afin, 0);
+					vis.setColor(bfin, 0);
+				});
 	}),
-	TRR = new AbstractSibling("Ternary Right-Right",(VisualArray vis,Sorter srt) -> {
+	TRR = new AbstractSibling("Ternary Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = 0;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -281,13 +309,18 @@ public class QuickSort extends ConfigurableSorter{
 			vis.swap(left, righta);
 			righta--;
 		}
-		vis.setColor(righta+1, 0xff00ff00);
-		vis.setColor(rightb, 0xff00ff00);
-		srt.sort(vis.subArray(rightb+1, vis.size-rightb-1),vis.subArray(0, righta+1),this);
-		vis.setColor(righta+1, 0);
-		vis.setColor(rightb, 0);
+		final int afin = righta+1,bfin = rightb;
+		vis.setColor(afin, 0xff00ff00);
+		vis.setColor(bfin, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(rightb+1, vis.size-rightb-1),this,srt,exe),
+				sortTask(vis.subArray(0, righta+1),this,srt,exe),
+				() -> {
+					vis.setColor(afin, 0);
+					vis.setColor(bfin, 0);
+				});
 	}),
-	DLR = new AbstractSibling("Dual pivot Left-Right",(VisualArray vis,Sorter srt) -> {
+	DLR = new AbstractSibling("Dual pivot Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivota = 0,pivotb = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivota);
 		vis.setColor(pivota, 0xffffff00);
@@ -324,17 +357,19 @@ public class QuickSort extends ConfigurableSorter{
 		}
 		vis.setColor(pivota, 0);
 		vis.setColor(pivotb, 0);
-		vis.setColor(leftb, 0xff00ff00);
-		vis.setColor(righta-1, 0xff00ff00);
-		if(r == 0){
-			srt.sort(										vis.subArray(0, leftb),vis.subArray(righta, vis.size-righta),this);
-		}else{
-			srt.sort(vis.subArray(leftb+1,righta-leftb-2),	vis.subArray(0, leftb),vis.subArray(righta, vis.size-righta),this);
-		}
-		vis.setColor(leftb, 0);
-		vis.setColor(righta-1, 0);
+		final int afin = leftb,bfin = righta-1;
+		vis.setColor(afin, 0xff00ff00);
+		vis.setColor(bfin, 0xff00ff00);
+		return Sorter.combine(
+				r == 0 ? COMPLETED_STAGE : sortTask(vis.subArray(leftb+1,righta-leftb-2),this,srt,exe),
+				sortTask(vis.subArray(0, leftb),this,srt,exe),
+				sortTask(vis.subArray(righta, vis.size-righta),this,srt,exe),
+				() -> {
+					vis.setColor(afin, 0);
+					vis.setColor(bfin, 0);
+				});
 	}),
-	DLL = new AbstractSibling("Dual pivot Left-Left",(VisualArray vis,Sorter srt) -> {
+	DLL = new AbstractSibling("Dual pivot Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivota = 0,pivotb = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivota);
 		vis.setColor(pivota, 0xffffff00);
@@ -350,21 +385,23 @@ public class QuickSort extends ConfigurableSorter{
 			}
 		}
 		lefta--;
-		vis.setColor(lefta, 0xff00ff00);
 		vis.setColor(pivota, 0);
 		vis.swap(pivota, lefta);
-		vis.setColor(right, 0xff00ff00);
 		vis.setColor(pivotb, 0);
 		vis.swap(pivotb, right);
-		if(r == 0){
-			srt.sort(vis.subArray(0, lefta),vis.subArray(right+1, vis.size-right-1),this);
-		}else{
-			srt.sort(vis.subArray(0, lefta),vis.subArray(lefta+1, right-lefta-1),vis.subArray(right+1, vis.size-right-1),this);
-		}
-		vis.setColor(lefta, 0);
-		vis.setColor(right, 0);
+		final int afin = lefta,bfin = right;
+		vis.setColor(afin, 0xff00ff00);
+		vis.setColor(bfin, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(0, lefta),this,srt,exe),
+				r == 0 ? COMPLETED_STAGE : sortTask(vis.subArray(lefta+1, right-lefta-1),this,srt,exe),
+				sortTask(vis.subArray(right+1, vis.size-right-1),this,srt,exe),
+				() -> {
+					vis.setColor(afin, 0);
+					vis.setColor(bfin, 0);
+				});
 	}),
-	DRR = new AbstractSibling("Dual pivot Right-Right",(VisualArray vis,Sorter srt) -> {
+	DRR = new AbstractSibling("Dual pivot Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivota = 0,pivotb = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivota);
 		vis.setColor(pivota, 0xffffff00);
@@ -382,18 +419,20 @@ public class QuickSort extends ConfigurableSorter{
 		rightb++;
 		left--;
 		vis.setColor(pivota, 0);
-		vis.setColor(left, 0xff00ff00);
 		vis.swap(pivota, left);
 		vis.setColor(pivotb, 0);
-		vis.setColor(rightb, 0xff00ff00);
 		vis.swap(pivotb, rightb);
-		if(r == 0){
-			srt.sort(vis.subArray(rightb+1, vis.size-rightb-1),vis.subArray(0, left),this);
-		}else{
-			srt.sort(vis.subArray(rightb+1, vis.size-rightb-1),vis.subArray(left+1, rightb-left-1),vis.subArray(0, left),this);
-		}
-		vis.setColor(left, 0);
-		vis.setColor(rightb, 0);
+		final int afin = left,bfin = rightb;
+		vis.setColor(left, 0xff00ff00);
+		vis.setColor(rightb, 0xff00ff00);
+		return Sorter.combine(
+				sortTask(vis.subArray(rightb+1, vis.size-rightb-1),this,srt,exe),
+				sortTask(vis.subArray(0, left),this,srt,exe),
+				r == 0 ? COMPLETED_STAGE : sortTask(vis.subArray(left+1, rightb-left-1),this,srt,exe),
+				() -> {
+					vis.setColor(afin, 0);
+					vis.setColor(bfin, 0);
+				});
 	});
 	public final List<Sorter> subSorters = List.of(SLL,SLR,SRR,TLL,TLR,TRR,DLL,DLR,DRR);
 	public Iterator<Sorter> iterator(){return subSorters.iterator();}

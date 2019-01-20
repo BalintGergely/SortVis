@@ -1,6 +1,37 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+
 public interface Sorter {
+	public static final CompletionStage<?> COMPLETED_STAGE = CompletableFuture.completedStage(null);
+	public static final Runnable NULL_RUN = () -> {};
+	public static CompletionStage<?> combine(CompletionStage<?> a,CompletionStage<?> b,Runnable rn){
+		if(a == COMPLETED_STAGE){
+			if(b == COMPLETED_STAGE){
+				rn.run();
+				return COMPLETED_STAGE;
+			}
+			return rn == NULL_RUN ? b : b.thenRun(rn);
+		}
+		if(b == COMPLETED_STAGE){
+			return rn == NULL_RUN ? a : a.thenRun(rn);
+		}
+		return a.runAfterBoth(b, rn);
+	}
+	public static CompletionStage<?> combine(CompletionStage<?> a,CompletionStage<?> b,CompletionStage<?> c,Runnable rn){
+		if(a == COMPLETED_STAGE){
+			return combine(b,c,rn);
+		}
+		if(b == COMPLETED_STAGE){
+			return combine(a,c,rn);
+		}
+		if(c == COMPLETED_STAGE){
+			return combine(a,b,rn);
+		}
+		return a.runAfterBoth(b, NULL_RUN).runAfterBoth(c, rn);
+	}
 	public static boolean guardedSort(VisualArray vis){
 		switch(vis.size){
 		case 3:vis.compareAndSwap(0, 1);
@@ -15,24 +46,8 @@ public interface Sorter {
 	}
 	/**
 	 * Sorts the visual array using this Sorter. Recursive calls within the sorter objects are normally not allowed, so they should be done on the parameter <code>srt</code>
+	 * @param exe TODO
+	 * @return TODO
 	 */
-	public void sort(VisualArray vis,Sorter srt);
-	/**
-	 * Sorts both visual arrays using this Sorter.
-	 */
-	public default void sort(VisualArray vis0,VisualArray vis1,Sorter srt){
-		if(vis0.overlaps(vis1)){
-			throw new IllegalArgumentException();
-		}
-		sort(vis0,srt);
-		sort(vis1,srt);
-	}
-	public default void sort(VisualArray vis0,VisualArray vis1,VisualArray vis2,Sorter srt){
-		if(vis0.overlaps(vis1) || vis1.overlaps(vis2) || vis2.overlaps(vis0)){
-			throw new IllegalArgumentException();
-		}
-		sort(vis0,srt);
-		sort(vis1,srt);
-		sort(vis2,srt);
-	}
+	public CompletionStage<?> sort(VisualArray vis,Sorter srt, Executor exe);
 }

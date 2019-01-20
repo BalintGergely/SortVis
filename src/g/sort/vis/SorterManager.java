@@ -1,14 +1,13 @@
 package g.sort.vis;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.invoke.VarHandle;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Random;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
@@ -18,15 +17,6 @@ import java.util.concurrent.locks.LockSupport;
  * Responsible for handling the Array, the effects and the Multitasker.
  */
 public class SorterManager implements Sorter{
-	private static final VarHandle TASK;
-	static {
-		try {
-			Lookup lk = MethodHandles.lookup();
-			TASK = lk.findVarHandle(SorterManager.class, "task", Runnable.class);
-		} catch (NoSuchFieldException | IllegalAccessException e) {
-			throw new ExceptionInInitializerError(e);
-		}
-	}
 	private class CustomPhaser extends Phaser{
 		private volatile Thread advancingThread;
 		private long latestCheck;
@@ -103,7 +93,6 @@ public class SorterManager implements Sorter{
 	private CustomPhaser phaser;
 	private Random random = new Random();
 	private DisplayInterface didf;
-	private Runnable task;//WarHandle'd
 	
 	private BiIntBooleanConsumer ownEvent = (int a,int b,boolean c) -> {
 		if(c ? blockAtWrite : blockAtRead){
@@ -118,36 +107,6 @@ public class SorterManager implements Sorter{
 		}
 	};
 	public final Node<Iterable<ConfigurableSorter>> root;
-	private void run(){
-		while(true){
-			try{
-				didf.tick();//We still have to tick because cooldowns always happen
-				Runnable tsk = task;
-				if(tsk == null){
-					LockSupport.parkNanos(200000000);
-				}else{
-					didf.running(true);
-					phaser.register();
-					try{
-						tsk.run();//When this method returns, no internal thread should run any task. At all.
-					}finally{
-						phaser.arriveAndDeregister();
-						if(!TASK.compareAndSet(this,tsk,null)){
-							System.out.println("Task updated while working.");
-							//XXX Do not remove the debug here. Without this, the task field won't be set at all due to a Java bug. Try something else like LockSupport.parkNanos()
-						}
-					}
-					didf.running(false);
-				}
-				didf.notesOff();
-			}catch(Throwable e){
-				if(!(e instanceof InterruptedException || e.getCause() instanceof InterruptedException)){
-					e.printStackTrace(System.out);
-				}
-			}
-			multitasker.reset();
-		}
-	}
 	private IdentityHashMap<Object,Sorter> sorterMap;
 	public SorterManager(DisplayInterface didf) {
 		sorterMap = new IdentityHashMap<>();
@@ -175,7 +134,7 @@ public class SorterManager implements Sorter{
 		fill(root);
 		multitasker = new Multitasker(Executors.privilegedThreadFactory(),
 				() -> phaser = new CustomPhaser(),
-				this::run);
+				didf,200);
 	}
 	@SuppressWarnings("unchecked")
 	private void fill(Node<? extends Iterable<? extends Sorter>> str){
@@ -210,88 +169,30 @@ public class SorterManager implements Sorter{
 		return s;
 	}
 	@Override
-	public void sort(VisualArray vis, Sorter srt) {
+	public CompletionStage<?> sort(VisualArray vis, Sorter srt, Executor exe) {
 		if(Thread.interrupted()){
 			throw new RuntimeException(new InterruptedException());
 		}
 		if(!Sorter.guardedSort(vis)){
 			Sorter s = getSorter();
-			s.sort(vis, this);
-			if(!vis.localCheck()){
-				throw new IllegalStateException(s.getClass().getName()+" \""+s.toString()+"\" DEFECTED AT ARRAY SIZE "+vis.size);
-			}
+			return s.sort(vis, this, exe);
+			//if(!vis.localCheck()){
+			//	throw new IllegalStateException(s.getClass().getName()+" \""+s.toString()+"\" DEFECTED AT ARRAY SIZE "+vis.size);
+			//}
 		}
-	}
-	public void sort(VisualArray vis0, VisualArray vis1, Sorter srt){
-		if(vis0.overlaps(vis1)){
-			throw new IllegalArgumentException();
-		}
-		if(vis0.size < vis1.size){
-			multitasker.run2(
-					() -> sort(vis1,srt),
-					() -> sort(vis0,srt));
-		}else{
-			multitasker.run2(
-					() -> sort(vis0,srt),
-					() -> sort(vis1,srt));
-		}
-	}
-	public void sort(VisualArray a, VisualArray b, VisualArray c, Sorter srt){
-		if(a.overlaps(b) || b.overlaps(c) || c.overlaps(a)){
-			throw new IllegalArgumentException();
-		}
-		final VisualArray vis0,vis1,vis2;
-		if(a.size > b.size){//			0aa	bb0	ccc
-			if(a.size > c.size){// 		00a	bb0	cc0 els	0a0 b00 00c
-				vis0 = a;
-				if(b.size > c.size){//	00a	0b0	c00 els 00a	b00	0c0
-					vis1 = b;
-					vis2 = c;
-				}else{
-					vis1 = c;
-					vis2 = b;
-				}
-			}else{
-				vis0 = c;
-				vis1 = a;
-				vis2 = b;
-			}
-		}else{//						aa0 0bb ccc
-			if(a.size < c.size){//		a00 0bb 0cc els 0a0 00b c00
-				vis2 = a;
-				if(b.size < c.size){//	a00 0b0 00c els a00 00b 0c0
-					vis1 = b;
-					vis0 = c;
-				}else{
-					vis1 = c;
-					vis0 = b;
-				}
-			}else{
-				vis0 = b;
-				vis1 = a;
-				vis2 = c;
-			}
-		}
-		multitasker.run3(
-				() -> sort(vis0,srt),
-				() -> sort(vis1,srt),
-				() -> sort(vis2,srt));
+		return COMPLETED_STAGE;
 	}
 	public void stop(){
 		multitasker.purge();
 	}
 	private void setTask(Runnable rn){
-		if(task != rn){
-			task = rn;
-			multitasker.purge();
-		}
+		multitasker.setMainTask(rn);
 	}
 	public void setThreadCount(int count){
 		multitasker.setThreadCount(count);
 	}
 	public boolean isTaskRunning(){
-		Runnable t = task;
-		return t != null;
+		return multitasker.isTaskRunning();
 	}
 	public void recreate(ValueSetGenerator values,int size){
 		setTask(() -> {array = new VisualArray((int i) -> values.apply(i, size, random),size,ownEvent);didf.arrayChanged();});
@@ -341,8 +242,7 @@ public class SorterManager implements Sorter{
 	private Runnable TASK_SORT = () -> {
 		VisualArray s = array;
 		if(s != null){
-			sort(s, null);
-			s.check();
+			sort(s, null, multitasker);
 		}
 	};
 	public void doSort(){

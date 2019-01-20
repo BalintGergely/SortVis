@@ -1,53 +1,101 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+
 public class MergeSort extends ConfigurableSorter{
 	public MergeSort(){}
 	@Override
-	public void sort(VisualArray vis,Sorter srt) {
+	public CompletionStage<?> sort(VisualArray vis,Sorter srt, Executor exe) {
 		if(lowLevelFirst){
 			int i = Integer.numberOfTrailingZeros(Integer.highestOneBit(vis.size))-1;
-			while(i >= 0){
-				sort(vis,this,0,vis.size,i);
+			if(exe == null){
+				while(i >= 0){
+					sort(vis,this,null,i);
+					i--;
+				}
+			}else if(i >= 0){
+				CompletionStage<?> cml = sort(vis,this,exe,i);
 				i--;
+				while(i >= 0){
+					int zi = i;
+					cml = cml.thenRun(() -> sort(vis,this,exe,zi));
+					i--;
+				}
+				return cml;
 			}
+			return COMPLETED_STAGE;
 		}else{
-			sort(vis,srt,0,vis.size,-1);
+			return sort(vis,srt,exe,-1);
 		}
 	}
-	public void sort(VisualArray vis,Sorter srt,int off,int len,int depth){
-		switch(len){
-		case 2:vis.compareAndSwap(off, off+1);
-		case 1:
-		case 0:return;
+	public CompletionStage<?> sort(VisualArray vis,Sorter srt,Executor exe,int depth){
+		if(Sorter.guardedSort(vis)){
+			return COMPLETED_STAGE;
 		}
-		int left = len/2,right = len-left;
-		if(depth != 0){
-			if(srt.getClass() == MergeSort.class){
-				MergeSort s = (MergeSort)srt;
-				s.sort(vis,this,off,left,depth-1);
-				s.sort(vis,this,off+left,right,depth-1);
-			}else{
-				srt.sort(vis.subArray(off, left),vis.subArray(off+left, right),this);
+		final int left = vis.size/2,right = vis.size-left;
+		if(exe == null){
+			if(depth != 0){
+				if(srt.getClass() == MergeSort.class){
+					MergeSort s = (MergeSort)srt;
+					s.sort(vis.subArray(0, left),this,null,depth-1);
+					s.sort(vis.subArray(left, right),this,null,depth-1);
+				}else{
+					srt.sort(vis.subArray(0, left),this,null);
+					srt.sort(vis.subArray(left, right),this,null);
+				}
 			}
-		}
-		if(depth <= 0){
-			if(variant.equals(IN_PLACE)){
-				mergeInPlace(vis,off,left,right);
+			if(depth <= 0){
+				if(variant.equals(IN_PLACE)){
+					mergeInPlace(vis,left,right);
+				}else{
+					mergeOutOfPlace(vis,left,right,variant.equalsIgnoreCase(OUT_OF_PLACE_OPT));
+				}
+			}
+			return COMPLETED_STAGE;
+		}else{
+			if(depth != 0){
+				CompletionStage<?> a;
+				CompletionStage<?> b;
+				if(srt.getClass() == MergeSort.class){
+					MergeSort s = (MergeSort)srt;
+					a = s.sort(vis.subArray(0, left),this,exe,depth-1);
+					b = s.sort(vis.subArray(left, right),this,exe,depth-1);
+				}else{
+					a = srt.sort(vis.subArray(0, left),this,null);
+					b = srt.sort(vis.subArray(left, right),this,null);
+				}
+				if(depth < 0){
+					return a.runAfterBoth(b, () -> {
+						if(variant.equals(IN_PLACE)){
+							mergeInPlace(vis,left,right);
+						}else{
+							mergeOutOfPlace(vis,left,right,variant.equalsIgnoreCase(OUT_OF_PLACE_OPT));
+						}
+					});
+				}else{
+					return a == COMPLETED_STAGE ? b : (b == COMPLETED_STAGE ? a : a.runAfterBoth(b, NULL_RUN));
+				}
 			}else{
-				mergeOutOfPlace(vis,off,left,right,variant.equalsIgnoreCase(OUT_OF_PLACE_OPT));
+				if(variant.equals(IN_PLACE)){
+					mergeInPlace(vis,left,right);
+				}else{
+					mergeOutOfPlace(vis,left,right,variant.equalsIgnoreCase(OUT_OF_PLACE_OPT));
+				}
+				return COMPLETED_STAGE;
 			}
 		}
 	}
-	public void mergeOutOfPlace(VisualArray vis,int off,int left,int right,boolean op){
-		int len = left+right;
+	public void mergeOutOfPlace(VisualArray vis,int left,int right,boolean op){
+		int len = vis.size;
 		int x = 0,y = 0,z = 0,k = 0;
 		while(z < len){//xv = off+x, yv = off+y, zv = off+z
-			if(x != left && (y == right || vis.compare(off+x, off+left+y) <= 0)){
-				vis.setColor(true,off+z,0x80808080);
-				vis.copy(false,off+x,true,off+z);
+			if(x != left && (y == right || vis.compare(x, left+y) <= 0)){
+				vis.setColor(true,z,0x80808080);
+				vis.copy(false,x,true,z);
 				if(op){
-					vis.setColor(true,off+k,0);
-					vis.copy(true,off+k,false,off+k);
+					vis.setColor(true,k,0);
+					vis.copy(true,k,false,k);
 					k++;
 				}
 				x++;
@@ -55,31 +103,32 @@ public class MergeSort extends ConfigurableSorter{
 					len = left+y;
 				}
 			}else{
-				vis.setColor(true,off+z,0x80808080);
-				vis.copy(false,off+left+y,true,off+z);
+				vis.setColor(true,z,0x80808080);
+				vis.copy(false,left+y,true,z);
 				y++;
 			}
 			z++;
 		}
 		while(k < len){
-			vis.setColor(true, off+k, 0);
-			vis.copy(true, off+k, false, off+k);
+			vis.setColor(true, k, 0);
+			vis.copy(true, k, false, k);
 			k++;
 		}
 	}
-	public void mergeInPlace(VisualArray vis,int off,int left,int right){
+	public void mergeInPlace(VisualArray vis,int middle,int right){
+		int left = 0;
 		while(true){
-			if(vis.compare(off, off+left) <= 0){
-				off++;
-				left--;
-				if(left == 0){
+			if(vis.compare(left, left+middle) <= 0){
+				left++;
+				middle--;
+				if(middle == 0){
 					return;
 				}
 			}else{
-				vis.copy(false, off+left, true, off);
-				vis.copy(off, off+1, left);
-				vis.copy(true, off, false, off);
-				off++;
+				vis.copy(false, left+middle, true, left);
+				vis.copy(left, left+1, middle);
+				vis.copy(true, left, false, left);
+				left++;
 				right--;
 				if(right == 0){
 					return;
