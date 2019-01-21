@@ -1,9 +1,8 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-
-import static g.sort.vis.CompletionTask.*;
 
 public class MergeSort extends ConfigurableSorter{
 	public MergeSort(){}
@@ -61,11 +60,11 @@ public class MergeSort extends ConfigurableSorter{
 				CompletionStage<?> b;
 				if(srt.getClass() == MergeSort.class){
 					MergeSort s = (MergeSort)srt;
-					a = decompose(supplyAsync(() -> s.sort(vis.subArray(0, left),this,exe,depth-1),exe));
-					b = decompose(supplyAsync(() -> s.sort(vis.subArray(left, right),this,exe,depth-1),exe));
+					a = Sorter.decompose(CompletableFuture.supplyAsync(() -> s.sort(vis.subArray(0, left),this,exe,depth-1),exe));
+					b = Sorter.decompose(CompletableFuture.supplyAsync(() -> s.sort(vis.subArray(left, right),this,exe,depth-1),exe));
 				}else{
-					a = decompose(supplyAsync(() -> srt.sort(vis.subArray(0, left),this,exe),exe));
-					b = decompose(supplyAsync(() -> srt.sort(vis.subArray(left, right),this,exe),exe));
+					a = Sorter.decompose(CompletableFuture.supplyAsync(() -> srt.sort(vis.subArray(0, left),this,exe),exe));
+					b = Sorter.decompose(CompletableFuture.supplyAsync(() -> srt.sort(vis.subArray(left, right),this,exe),exe));
 				}
 				if(depth < 0){
 					return a.runAfterBoth(b, () -> {
@@ -76,7 +75,7 @@ public class MergeSort extends ConfigurableSorter{
 						}
 					});
 				}else{
-					return combine(a,b,null);
+					return a == COMPLETED_STAGE ? b : (b == COMPLETED_STAGE ? a : a.runAfterBoth(b, NULL_RUN));
 				}
 			}else{
 				if(variant.equals(IN_PLACE)){

@@ -47,7 +47,7 @@ public class InsertionSort extends ConfigurableSorter{
 			vis.setColor(i, 0);
 			i++;
 		}
-		return CompletionTask.COMPLETED_STAGE;
+		return COMPLETED_STAGE;
 	}
 	@Override
 	public int getNumberOptions() {

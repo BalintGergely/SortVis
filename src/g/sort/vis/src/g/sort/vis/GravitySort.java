@@ -30,7 +30,7 @@ public class GravitySort extends ConfigurableSorter{
 			if(x != vis.size)vis.fireEvent(h, -1, true);
 		}
 		vis.clearVisuals();
-		return CompletionTask.COMPLETED_STAGE;
+		return COMPLETED_STAGE;
 	}
 	public String toString(){
 		return "Gravity Sort";

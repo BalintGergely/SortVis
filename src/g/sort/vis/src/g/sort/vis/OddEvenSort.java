@@ -19,7 +19,7 @@ public class OddEvenSort extends ConfigurableSorter{
 			d = false;
 			i = (i%2)+1;
 		}while(b);
-		return CompletionTask.COMPLETED_STAGE;
+		return COMPLETED_STAGE;
 	}
 	public String toString(){
 		return "Odd-Even Sort";

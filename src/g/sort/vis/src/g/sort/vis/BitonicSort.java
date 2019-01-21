@@ -1,9 +1,8 @@
 package g.sort.vis;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-
-import static g.sort.vis.CompletionTask.*;
 
 public class BitonicSort extends ConfigurableSorter{
 	private boolean basic = false;
@@ -20,9 +19,9 @@ public class BitonicSort extends ConfigurableSorter{
 				preSort(right,direction,null);
 				return subSort(vis,direction,exe);
 			}else{
-				CompletionStage<?> a = decompose(supplyAsync(() -> preSort(left,!direction,exe), exe));
-				CompletionStage<?> b = decompose(supplyAsync(() -> preSort(right,direction,exe), exe));
-				return decompose(a.thenCombine(b, (Object x,Object y) -> subSort(vis,direction,exe)));
+				CompletionStage<?> a = Sorter.decompose(CompletableFuture.supplyAsync(() -> preSort(left,!direction,exe), exe));
+				CompletionStage<?> b = Sorter.decompose(CompletableFuture.supplyAsync(() -> preSort(right,direction,exe), exe));
+				return	Sorter.decompose(a.thenCombine(b, (Object x,Object y) -> subSort(vis,direction,exe)));
 			}
 		}
 		return COMPLETED_STAGE;
@@ -43,10 +42,10 @@ public class BitonicSort extends ConfigurableSorter{
 				subSort(vis.subArray(0, dis),direction,null);
 				subSort(vis.subArray(dis, vis.size-dis),direction,null);
 			}else{
-				return	combine(
-						decompose(CompletionTask.supplyAsync(() -> subSort(vis.subArray(0, dis),direction,exe),exe)),
-						decompose(CompletionTask.supplyAsync(() -> subSort(vis.subArray(dis, vis.size-dis),direction,exe),exe)),
-						null);
+				return	Sorter.combine(
+						Sorter.decompose(CompletableFuture.supplyAsync(() -> subSort(vis.subArray(0, dis),direction,exe),exe)),
+						Sorter.decompose(CompletableFuture.supplyAsync(() -> subSort(vis.subArray(dis, vis.size-dis),direction,exe),exe)),
+						Sorter.NULL_RUN);
 			}
 		}
 		return COMPLETED_STAGE;

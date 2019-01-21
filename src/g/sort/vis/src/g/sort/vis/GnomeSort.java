@@ -15,7 +15,7 @@ public class GnomeSort extends ConfigurableSorter{
 				i++;
 			}
 		}
-		return CompletionTask.COMPLETED_STAGE;
+		return COMPLETED_STAGE;
 	}
 	public String toString(){
 		return "Gnome Sort";

@@ -180,7 +180,7 @@ public class SorterManager implements Sorter{
 			//	throw new IllegalStateException(s.getClass().getName()+" \""+s.toString()+"\" DEFECTED AT ARRAY SIZE "+vis.size);
 			//}
 		}
-		return CompletionTask.COMPLETED_STAGE;
+		return COMPLETED_STAGE;
 	}
 	public void stop(){
 		multitasker.purge();

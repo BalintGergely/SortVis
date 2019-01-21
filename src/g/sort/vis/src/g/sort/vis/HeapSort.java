@@ -39,7 +39,7 @@ public class HeapSort extends ConfigurableSorter{
 			vis.setColor(len, 0);
 			vis.swap(0, len);
 		}
-		return CompletionTask.COMPLETED_STAGE;
+		return COMPLETED_STAGE;
 	}
 	public void siftDown(VisualArray vis,int index,int len){
 		while(true){
