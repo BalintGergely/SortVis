@@ -2,10 +2,11 @@ package g.sort.vis;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
+
+import static g.sort.vis.CompletionTask.*;
 
 public class QuickSort extends ConfigurableSorter{
 	/*
@@ -140,7 +141,7 @@ public class QuickSort extends ConfigurableSorter{
 		if(exe == null){
 			return target.sort(vis, source, exe);
 		}
-		return CompletableFuture.runAsync(() -> target.sort(vis, source, exe), exe);
+		return decompose(supplyAsync(() -> target.sort(vis, source, exe), exe));
 	}
 	private final Sorter
 	SLR = new AbstractSibling("Twins Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
@@ -167,7 +168,7 @@ public class QuickSort extends ConfigurableSorter{
 		vis.swap(left, pivot);
 		final int afin = left;
 		vis.setColor(afin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(0, left),this,srt,exe),
 				sortTask(vis.subArray(left+1, vis.size-left-1),this,srt,exe),
 				() -> vis.setColor(afin,0));
@@ -188,7 +189,7 @@ public class QuickSort extends ConfigurableSorter{
 		vis.swap(lefta, pivot);
 		final int afin = lefta;
 		vis.setColor(afin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(0, lefta),this,srt,exe),
 				sortTask(vis.subArray(lefta+1, vis.size-lefta-1),this,srt,exe),
 				() -> vis.setColor(afin, 0));
@@ -210,7 +211,7 @@ public class QuickSort extends ConfigurableSorter{
 		vis.swap(rightb, pivot);
 		final int afin = rightb;
 		vis.setColor(afin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(rightb+1, vis.size-rightb-1),this,srt,exe),
 				sortTask(vis.subArray(0, rightb),this,srt,exe),
 				() -> vis.setColor(afin, 0));
@@ -252,7 +253,7 @@ public class QuickSort extends ConfigurableSorter{
 		final int afin = leftb,bfin = righta-1;
 		vis.setColor(afin, 0xff00ff00);
 		vis.setColor(bfin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(0, leftb),this,srt,exe),
 				sortTask(vis.subArray(righta, vis.size-righta),this,srt,exe),
 				() -> {
@@ -282,7 +283,7 @@ public class QuickSort extends ConfigurableSorter{
 		final int afin = lefta,bfin = leftb-1;
 		vis.setColor(afin, 0xff00ff00);
 		vis.setColor(bfin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(0, lefta),this,srt,exe),
 				sortTask(vis.subArray(leftb, vis.size-leftb),this,srt,exe),
 				() -> {
@@ -312,7 +313,7 @@ public class QuickSort extends ConfigurableSorter{
 		final int afin = righta+1,bfin = rightb;
 		vis.setColor(afin, 0xff00ff00);
 		vis.setColor(bfin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(rightb+1, vis.size-rightb-1),this,srt,exe),
 				sortTask(vis.subArray(0, righta+1),this,srt,exe),
 				() -> {
@@ -360,7 +361,7 @@ public class QuickSort extends ConfigurableSorter{
 		final int afin = leftb,bfin = righta-1;
 		vis.setColor(afin, 0xff00ff00);
 		vis.setColor(bfin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				r == 0 ? COMPLETED_STAGE : sortTask(vis.subArray(leftb+1,righta-leftb-2),this,srt,exe),
 				sortTask(vis.subArray(0, leftb),this,srt,exe),
 				sortTask(vis.subArray(righta, vis.size-righta),this,srt,exe),
@@ -392,7 +393,7 @@ public class QuickSort extends ConfigurableSorter{
 		final int afin = lefta,bfin = right;
 		vis.setColor(afin, 0xff00ff00);
 		vis.setColor(bfin, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(0, lefta),this,srt,exe),
 				r == 0 ? COMPLETED_STAGE : sortTask(vis.subArray(lefta+1, right-lefta-1),this,srt,exe),
 				sortTask(vis.subArray(right+1, vis.size-right-1),this,srt,exe),
@@ -425,7 +426,7 @@ public class QuickSort extends ConfigurableSorter{
 		final int afin = left,bfin = rightb;
 		vis.setColor(left, 0xff00ff00);
 		vis.setColor(rightb, 0xff00ff00);
-		return Sorter.combine(
+		return combine(
 				sortTask(vis.subArray(rightb+1, vis.size-rightb-1),this,srt,exe),
 				sortTask(vis.subArray(0, left),this,srt,exe),
 				r == 0 ? COMPLETED_STAGE : sortTask(vis.subArray(left+1, rightb-left-1),this,srt,exe),

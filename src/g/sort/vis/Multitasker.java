@@ -80,6 +80,7 @@ public class Multitasker implements Executor{
 		System.out.println(th.getName()+" WORK");
 		boolean taskFlag = false;
 		while(true){//Loops this thread while needed
+			Thread.interrupted();//Clear interrupt status.
 			if(th == main){
 				if(taskCounter.get() <= 0){
 					taskCounter.set(0);
@@ -102,9 +103,7 @@ public class Multitasker implements Executor{
 							}catch(Throwable t){
 								t.printStackTrace(System.out);
 							}finally{
-								if(TASK.compareAndSet(this,rn,(Runnable)null)){
-									
-								}
+								if(TASK.compareAndSet(this,rn,(Runnable)null)){}
 								phaser.arriveAndDeregister();
 								taskCounter.decrementAndGet();
 							}
@@ -123,7 +122,7 @@ public class Multitasker implements Executor{
 				}
 			}
 			try{//While we have tasks to run, we are registered to the phaser. If we no longer have any tasks, we deregister ourselves.
-				Runnable rn = queue.poll(blockTime,TimeUnit.MILLISECONDS);
+				Runnable rn = th == main ? queue.poll(blockTime,TimeUnit.MILLISECONDS) : queue.take();
 				if(rn != null) {
 					System.out.println(th.getName()+" RUN TASK");
 					phaser.register();
@@ -138,7 +137,7 @@ public class Multitasker implements Executor{
 							}
 						}
 					}finally{
-						if(taskCounter.decrementAndGet() == 0){
+						if(taskCounter.decrementAndGet() == 0 && main != th){
 							main.interrupt();
 						}
 						System.out.println(th.getName()+" STOPPED RUNNING TASKS");

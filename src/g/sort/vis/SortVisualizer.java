@@ -475,7 +475,7 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 		case STATUS:
 			int color = data.getColor(shan,i);
 			return new Color(cooldown ? 
-								Colors.specialBlend(0xffff0000,color) : 
+								(shan ? (Colors.specialBlend(0xffff0000,color) & 0xffffff) | (color & 0xff000000) : Colors.specialBlend(0xffff0000,color)): 
 								(shan ? color : Colors.specialBlend(0xffffffff, color)),true);
 		case VALUE:
 			if(shan || cooldown){

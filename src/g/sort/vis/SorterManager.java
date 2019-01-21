@@ -180,7 +180,7 @@ public class SorterManager implements Sorter{
 			//	throw new IllegalStateException(s.getClass().getName()+" \""+s.toString()+"\" DEFECTED AT ARRAY SIZE "+vis.size);
 			//}
 		}
-		return COMPLETED_STAGE;
+		return CompletionTask.COMPLETED_STAGE;
 	}
 	public void stop(){
 		multitasker.purge();
@@ -195,7 +195,7 @@ public class SorterManager implements Sorter{
 		return multitasker.isTaskRunning();
 	}
 	public void recreate(ValueSetGenerator values,int size){
-		setTask(() -> {array = new VisualArray((int i) -> values.apply(i, size, random),size,ownEvent);didf.arrayChanged();});
+		setTask(() -> {array = new VisualArray((int i) -> values.apply(i, size, random),size,ownEvent);didf.arrayChanged();System.gc();});
 	}
 	public void stepLock(){
 		timedPermit = false;
@@ -242,7 +242,13 @@ public class SorterManager implements Sorter{
 	private Runnable TASK_SORT = () -> {
 		VisualArray s = array;
 		if(s != null){
-			sort(s, null, multitasker);
+			sort(s, null, multitasker).thenRun(() -> {
+				try{
+					array.check();
+				}finally{
+					System.gc();
+				}
+			});
 		}
 	};
 	public void doSort(){

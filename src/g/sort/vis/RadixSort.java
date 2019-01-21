@@ -24,7 +24,7 @@ public class RadixSort extends ConfigurableSorter{
 			}
 			m *= p;
 		}
-		return COMPLETED_STAGE;
+		return CompletionTask.COMPLETED_STAGE;
 	}
 	public void sortOutOfPlace(VisualArray vis,int[] counts,int d,int p){
 		Arrays.fill(counts, 0);

@@ -38,7 +38,7 @@ public class SelectionSort extends ConfigurableSorter{
 			a++;
 		}
 		if(b < vis.size)vis.setColor(b, 0);
-		return COMPLETED_STAGE;
+		return CompletionTask.COMPLETED_STAGE;
 	}
 	@Override
 	public int getNumberOptions() {

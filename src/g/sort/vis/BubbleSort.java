@@ -27,7 +27,7 @@ public class BubbleSort extends ConfigurableSorter{
 			}
 			b--;
 		}
-		return COMPLETED_STAGE;
+		return CompletionTask.COMPLETED_STAGE;
 	}
 	@Override
 	public int getNumberOptions() {
