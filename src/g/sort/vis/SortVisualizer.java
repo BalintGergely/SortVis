@@ -10,11 +10,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.IdentityHashMap;
 
+import javax.imageio.ImageIO;
 import javax.sound.midi.Instrument;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiSystem;
@@ -30,6 +32,8 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -55,10 +59,11 @@ import javax.swing.tree.TreeSelectionModel;
 
 public class SortVisualizer extends JPanel implements DisplayInterface{
 	private static final String PILLARS = "Pillars",DOTS = "Dots",BRICKS = "Bricks",RAYS = "Rays",RAY_DOTS = "Ray dots",RAY_LINES = "Ray lines",
+								IMAGE_ROWS = "Image rows",IMAGE_COLUMNS = "Image columns",IMAGE_PIXELS_R = "Image pixels row first", IMAGE_PIXELS_C = "Image pixels column first",
 								VALUE = "Value",VALUE360 = "Value 360",DISTANCE = "Distance from target",STATUS = "Status",CONSTANT = "Constant",
 								ABSOLUTE_DISTANCE = "Absolute distance from target",
 								CIRCULAR_DISTANCE = "Circular distance from target";
-	private static final String[]	mainPick = new String[]{PILLARS,DOTS,BRICKS,RAYS,RAY_DOTS,RAY_LINES},
+	private static final String[]	mainPick = new String[]{PILLARS,DOTS,BRICKS,RAYS,RAY_DOTS,RAY_LINES,IMAGE_ROWS,IMAGE_COLUMNS,IMAGE_PIXELS_R,IMAGE_PIXELS_C},
 									colorPick = new String[]{STATUS,VALUE,VALUE360,DISTANCE,CONSTANT},
 									heightPick = new String[]{VALUE,DISTANCE,ABSOLUTE_DISTANCE,CIRCULAR_DISTANCE,CONSTANT};
 	public static final Color TRANSPARENT = new Color(0,true);
@@ -68,11 +73,70 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 		vis.display();
 	}
 	private JFrame frame;
+	private JFileChooser fileChooser;
+	private JComponent aLock,bLock,cLock,dLock;
 	private ToggleButtonModel						startModel = new ToggleButtonModel();
 	private TreeSelectionModel						selectedSorter = new DefaultTreeSelectionModel();
 	{selectedSorter.setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);}
 	private ComboBoxModel<ValueSetGenerator>		valueSetModel = new DefaultComboBoxModel<>(ValueSetGenerator.values());
-	private ComboBoxModel<String>					mainPickMethod = new DefaultComboBoxModel<>(mainPick),
+	private ImageHandler imageHandler;
+	private boolean imageMode;
+	private ComboBoxModel<String>					mainPickMethod =
+	new DefaultComboBoxModel<>(mainPick) {
+		private static final long serialVersionUID = 1L;
+	    // implements javax.swing.ComboBoxModel
+		public void setSelectedItem(Object anObject) {
+			String str = (String)anObject;
+			if(str.startsWith("Image")){
+				int opt;
+				if(imageHandler != null){
+					opt = JOptionPane.showConfirmDialog(frame, "Load a new image?", "SortVisualizer with image", JOptionPane.YES_NO_CANCEL_OPTION);
+				}else{
+					opt = JOptionPane.showConfirmDialog(frame, "This requires you to select an image file.", "SortVisualizer with image", JOptionPane.OK_CANCEL_OPTION);
+				}
+				if(opt == JOptionPane.OK_OPTION){//I'm not sure why the compiler errors if I put both of these in the switch.
+					opt = JOptionPane.YES_OPTION;
+				}
+				byte mode;
+				switch(str){
+				case IMAGE_ROWS:mode = ImageHandler.MODE_ROWS;break;
+				case IMAGE_COLUMNS:mode = ImageHandler.MODE_COLUMNS;break;
+				case IMAGE_PIXELS_R:mode = ImageHandler.MODE_PIXEL_ROWS;break;
+				case IMAGE_PIXELS_C:mode = ImageHandler.MODE_PIXEL_COLUMNS;break;
+				default:return;
+				}
+				switch(opt){
+				case JOptionPane.CANCEL_OPTION:
+					return;
+				case JOptionPane.YES_OPTION:
+					if(fileChooser == null){
+						fileChooser = new JFileChooser(new File(""));
+					}
+					if(fileChooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){
+						return;
+					}
+					File f = fileChooser.getSelectedFile();
+					try{
+						imageHandler = ImageHandler.newInstance(ImageIO.read(f), mode);
+					}catch(Exception e){
+						JOptionPane.showMessageDialog(frame, "The selected file couldn't be loaded.");
+						return;
+					}
+				case JOptionPane.NO_OPTION:
+					imageHandler = ImageHandler.newInstance(imageHandler.image, mode);
+				}
+				imageMode = true;
+				manager.recreate(imageHandler);
+			}else{
+				imageMode = false;
+			}
+			aLock.setEnabled(!imageMode);
+			bLock.setEnabled(!imageMode);
+			cLock.setEnabled(!imageMode);
+			dLock.setEnabled(!imageMode);
+			super.setSelectedItem(anObject);
+		}
+	},
 													colorPickMethod = new DefaultComboBoxModel<>(colorPick),
 													heightPickMethod = new DefaultComboBoxModel<>(heightPick);
 	{
@@ -192,18 +256,18 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			drawerSubpanel.add(new JLabel("Shape:"));
 			drawerSubpanel.add(new JComboBox<>(mainPickMethod));
 			drawerSubpanel.add(new JLabel("Heights:"));
-			drawerSubpanel.add(new JComboBox<>(heightPickMethod));
+			drawerSubpanel.add(aLock = new JComboBox<>(heightPickMethod));
 			drawerSubpanel.add(new JLabel("Colors:"));
-			drawerSubpanel.add(new JComboBox<>(colorPickMethod));
+			drawerSubpanel.add(bLock = new JComboBox<>(colorPickMethod));
 			sidebar.add(drawerSubpanel);
 		}
 		{
 			JPanel arraySubpanel = new JPanel(new GridLayout(0,2));
 			sidebar.add(arraySubpanel);
 			arraySubpanel.add(new JLabel("Array size"));
-			arraySubpanel.add(new JSpinner(arraySizeModel));
+			arraySubpanel.add(cLock = new JSpinner(arraySizeModel));
 			arraySubpanel.add(new JLabel("Value set"));
-			arraySubpanel.add(new JComboBox<>(valueSetModel));
+			arraySubpanel.add(dLock = new JComboBox<>(valueSetModel));
 			arraySubpanel.add(new JLabel("Thread count"));
 			arraySubpanel.add(new JSpinner(threadCountModel));
 			threadCountModel.addChangeListener((ChangeEvent e) -> {
@@ -220,7 +284,11 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 			arraySubpanel.add(borBox);
 			JButton create = new JButton("Create");
 			create.addActionListener((ActionEvent e) -> {
-				manager.recreate((ValueSetGenerator)valueSetModel.getSelectedItem(), arraySizeModel.getNumber().intValue());
+				if(imageMode){
+					manager.recreate(imageHandler);
+				}else{
+					manager.recreate((ValueSetGenerator)valueSetModel.getSelectedItem(), arraySizeModel.getNumber().intValue());
+				}
 			});
 			arraySubpanel.add(create);
 			JButton shuffle = new JButton();
@@ -434,38 +502,62 @@ public class SortVisualizer extends JPanel implements DisplayInterface{
 	private static ThreadLocal<LongHeap> hpTl = new ThreadLocal<>();
 	public void paintComponent(Graphics gr){
 		super.paintComponent(gr);
-		VisualArray data = manager.getArray();
-		if(data == null){
-			return;
-		}
 		int width = getWidth(),height = getHeight();
-		long time = System.nanoTime();
-		String	cm = colorPickMethod.getSelectedItem().toString(),
-				hm = heightPickMethod.getSelectedItem().toString();
-		if(!cm.equals(STATUS)){
-			int ts = data.size/50;
-			if(ts < 1){
-				ts = 1;
+		String pick = (String)mainPickMethod.getSelectedItem();
+		if(pick.startsWith("Image")){
+			ImageHandler image = imageHandler;
+			int dw = image.width,dh = image.height;
+			while(dw*2 < width && dh*2 < height){
+				dw*= 2;
+				dh*= 2;
 			}
-			LongHeap t = hpTl.get();
-			if(t == null || t.values.length != ts){
-				hpTl.set(t = new LongHeap(ts));
+			int x = width-dw,y = height-dh;
+			if(x < 0){
+				x = 0;
+			}else{
+				width = dw;
+				x /= 2;
 			}
-			t.size = 0;
-			t.put(time);
-			for(int i = 0;i < data.size;i++){
-				long cd = data.getCooldown(i);
-				t.put(cd);
+			if(y < 0){
+				y = 0;
+			}else{
+				height = dh;
+				y /= 2;
 			}
-			time = t.values[0];
-		}
-		switch(mainPickMethod.getSelectedItem().toString()){
-		case PILLARS:paintComponentPillars(data,(Graphics2D)gr,width,height,time,cm,hm);break;
-		case DOTS:paintComponentDots(data,(Graphics2D)gr,width,height,time,cm,hm);break;
-		case BRICKS:paintComponentBricks(data,(Graphics2D)gr,width,height,time,cm,hm);break;
-		case RAYS:paintComponentRays(data,(Graphics2D)gr,width,height,time,cm,hm);break;
-		case RAY_DOTS:paintComponentRayDots(data,(Graphics2D)gr,width,height,time,cm,hm);break;
-		case RAY_LINES:paintComponentRayLines(data,(Graphics2D)gr,width,height,time,cm,hm);break;
+			gr.drawImage(image.altImage, x, y, width, height, null);
+		}else{
+			VisualArray data = manager.getArray();
+			if(data == null){
+				return;
+			}
+			long time = System.nanoTime();
+			String	cm = colorPickMethod.getSelectedItem().toString(),
+					hm = heightPickMethod.getSelectedItem().toString();
+			if(!cm.equals(STATUS)){
+				int ts = data.size/50;
+				if(ts < 1){
+					ts = 1;
+				}
+				LongHeap t = hpTl.get();
+				if(t == null || t.values.length != ts){
+					hpTl.set(t = new LongHeap(ts));
+				}
+				t.size = 0;
+				t.put(time);
+				for(int i = 0;i < data.size;i++){
+					long cd = data.getCooldown(i);
+					t.put(cd);
+				}
+				time = t.values[0];
+			}
+			switch(pick){
+			case PILLARS:paintComponentPillars(data,(Graphics2D)gr,width,height,time,cm,hm);break;
+			case DOTS:paintComponentDots(data,(Graphics2D)gr,width,height,time,cm,hm);break;
+			case BRICKS:paintComponentBricks(data,(Graphics2D)gr,width,height,time,cm,hm);break;
+			case RAYS:paintComponentRays(data,(Graphics2D)gr,width,height,time,cm,hm);break;
+			case RAY_DOTS:paintComponentRayDots(data,(Graphics2D)gr,width,height,time,cm,hm);break;
+			case RAY_LINES:paintComponentRayLines(data,(Graphics2D)gr,width,height,time,cm,hm);break;
+			}
 		}
 	}
 	public Color colorOf(VisualArray data,boolean shan,int i,boolean cooldown,String method){

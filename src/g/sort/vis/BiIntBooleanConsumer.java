@@ -1,7 +1,7 @@
 package g.sort.vis;
 /**
  * 
- * A @FunctionalInterface that takes two int values and returns no result.
+ * A @FunctionalInterface that takes two int values and a boolean value which returns no result.
  * 
  * @author balintgergely
  *

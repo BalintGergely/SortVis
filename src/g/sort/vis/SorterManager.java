@@ -197,6 +197,9 @@ public class SorterManager implements Sorter{
 	public void recreate(ValueSetGenerator values,int size){
 		setTask(() -> {array = new VisualArray((int i) -> values.apply(i, size, random),size,ownEvent);didf.arrayChanged();System.gc();});
 	}
+	public void recreate(ImageHandler handler){
+		setTask(() -> {array = handler.makeArray(ownEvent);didf.arrayChanged();System.gc();});
+	}
 	public void stepLock(){
 		timedPermit = false;
 	}
@@ -242,6 +245,7 @@ public class SorterManager implements Sorter{
 	private Runnable TASK_SORT = () -> {
 		VisualArray s = array;
 		if(s != null){
+			array.clearVisuals();
 			sort(s, null, multitasker).thenRun(() -> {
 				try{
 					array.check();
