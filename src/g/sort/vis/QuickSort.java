@@ -143,8 +143,8 @@ public class QuickSort extends ConfigurableSorter{
 		}
 		return decompose(supplyAsync(() -> target.sort(vis, source, exe), exe));
 	}
-	private final Sorter
-	SLR = new AbstractSibling("Twins Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
+	public final List<Sorter> subSorters = List.of(
+	new AbstractSibling("Twins Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -161,9 +161,6 @@ public class QuickSort extends ConfigurableSorter{
 			}
 			left++;
 		}
-		if(left != right){
-			System.out.println("Err");
-		}
 		vis.setColor(pivot, 0);
 		vis.swap(left, pivot);
 		final int afin = left;
@@ -173,7 +170,7 @@ public class QuickSort extends ConfigurableSorter{
 				sortTask(vis.subArray(left+1, vis.size-left-1),this,srt,exe),
 				() -> vis.setColor(afin,0));
 	}),
-	SLL = new AbstractSibling("Twins Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Twins Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -194,7 +191,7 @@ public class QuickSort extends ConfigurableSorter{
 				sortTask(vis.subArray(lefta+1, vis.size-lefta-1),this,srt,exe),
 				() -> vis.setColor(afin, 0));
 	}),
-	SRR = new AbstractSibling("Twins Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Twins Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = 0;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -216,7 +213,7 @@ public class QuickSort extends ConfigurableSorter{
 				sortTask(vis.subArray(0, rightb),this,srt,exe),
 				() -> vis.setColor(afin, 0));
 	}),
-	TLR = new AbstractSibling("Ternary Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Ternary Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -261,7 +258,7 @@ public class QuickSort extends ConfigurableSorter{
 					vis.setColor(bfin, 0);
 				});
 	}),
-	TLL = new AbstractSibling("Ternary Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Ternary Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -291,7 +288,7 @@ public class QuickSort extends ConfigurableSorter{
 					vis.setColor(bfin, 0);
 				});
 	}),
-	TRR = new AbstractSibling("Ternary Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Ternary Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivot = 0;//Absolute
 		pickPivot(vis, 0, vis.size, pivot);
 		vis.setColor(pivot, 0xffffff00);
@@ -321,7 +318,7 @@ public class QuickSort extends ConfigurableSorter{
 					vis.setColor(bfin, 0);
 				});
 	}),
-	DLR = new AbstractSibling("Dual pivot Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Dual pivot Left-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivota = 0,pivotb = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivota);
 		vis.setColor(pivota, 0xffffff00);
@@ -370,7 +367,7 @@ public class QuickSort extends ConfigurableSorter{
 					vis.setColor(bfin, 0);
 				});
 	}),
-	DLL = new AbstractSibling("Dual pivot Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Dual pivot Left-Left",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivota = 0,pivotb = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivota);
 		vis.setColor(pivota, 0xffffff00);
@@ -402,7 +399,7 @@ public class QuickSort extends ConfigurableSorter{
 					vis.setColor(bfin, 0);
 				});
 	}),
-	DRR = new AbstractSibling("Dual pivot Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
+	new AbstractSibling("Dual pivot Right-Right",(VisualArray vis,Sorter srt, Executor exe) -> {
 		final int pivota = 0,pivotb = vis.size-1;//Absolute
 		pickPivot(vis, 0, vis.size, pivota);
 		vis.setColor(pivota, 0xffffff00);
@@ -434,8 +431,8 @@ public class QuickSort extends ConfigurableSorter{
 					vis.setColor(afin, 0);
 					vis.setColor(bfin, 0);
 				});
-	});
-	public final List<Sorter> subSorters = List.of(SLL,SLR,SRR,TLL,TLR,TRR,DLL,DLR,DRR);
+	})
+	);
 	public Iterator<Sorter> iterator(){return subSorters.iterator();}
 	public String toString(){
 		return "Quick Sort - Random";

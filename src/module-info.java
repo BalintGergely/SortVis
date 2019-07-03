@@ -8,6 +8,7 @@ import g.sort.vis.MergeSort;
 import g.sort.vis.OddEvenSort;
 import g.sort.vis.QuickSort;
 import g.sort.vis.RadixSort;
+import g.sort.vis.RandomSort;
 import g.sort.vis.SelectionSort;
 import g.sort.vis.InsertionSort;
 
@@ -21,5 +22,17 @@ import g.sort.vis.InsertionSort;
 module g.sort.vis {
 	requires java.desktop;
 	uses ConfigurableSorter;
-	provides ConfigurableSorter with SelectionSort,InsertionSort,GnomeSort,BubbleSort,OddEvenSort,MergeSort,QuickSort,HeapSort,RadixSort,GravitySort,BitonicSort;
+	provides ConfigurableSorter with
+	SelectionSort,
+	InsertionSort,
+	GnomeSort,
+	BubbleSort,
+	OddEvenSort,
+	MergeSort,
+	QuickSort,
+	HeapSort,
+	RadixSort,
+	GravitySort,
+	BitonicSort,
+	RandomSort;
 }

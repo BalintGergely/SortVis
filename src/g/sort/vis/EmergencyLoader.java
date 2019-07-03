@@ -17,7 +17,8 @@ public class EmergencyLoader implements Iterable<ConfigurableSorter>{
 		HeapSort.class,
 		RadixSort.class,
 		GravitySort.class,
-		BitonicSort.class
+		BitonicSort.class,
+		RandomSort.class
 	};
 	private static ConfigurableSorter nThSorter(int n){
 		@SuppressWarnings("unchecked")
