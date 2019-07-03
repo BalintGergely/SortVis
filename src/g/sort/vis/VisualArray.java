@@ -535,6 +535,9 @@ public final class VisualArray{
 	 * @return true if the content of this visual array is in ascending order.
 	 */
 	public boolean check() {
+		if(size != mainArray.length){
+			throw new UnsupportedOperationException();
+		}
 		clearVisuals();
 		int[] cas = (range >= size) ? new int[range+1] : shanArray;
 		for(int v : valuePool){
@@ -542,7 +545,7 @@ public final class VisualArray{
 		}
 		boolean err = false;
 		for(int i = 0;i < size;i++){
-			int val = mainArray[i+offset];
+			int val = mainArray[i];
 			if(val == valuePool[i]){
 				cas[val-min]--;
 			}else{
@@ -550,34 +553,38 @@ public final class VisualArray{
 			}
 		}
 		for(int i = 0;i < size;i++){
-			int val = mainArray[i+offset];
+			int val = mainArray[i];
 			if(val == valuePool[i]){
-				mainColor[i+offset] = 0xD000ff00;
+				mainColor[i] = 0xD000ff00;
 			}else{
 				int x = (--cas[val-min]);
 				if(x < min){
-					mainColor[i+offset] = 0xD0800000;
+					mainColor[i] = 0xD0800000;
 				}else{
-					mainColor[i+offset] = 0xB0B00000;
+					mainColor[i] = 0xB0B00000;
 				}
 			}
-			mainCooldown[i+offset] = System.nanoTime()+visualCooldown;
+			mainCooldown[i] = System.nanoTime()+visualCooldown;
 			fireEvent(val,-1,false);
 		}
 		if(!err){
-			Arrays.fill(mainColor, offset, offset+size, 0);
+			Arrays.fill(mainColor, 0);
 		}
 		fireEvent(-1,-1,true);
 		return !err;
 	}
 	/**
-	 * @return true if the content of this visual array is in ascending order.
+	 * @return True if the elements in this VisualArray are in ascending order.
 	 */
-	public boolean localCheck(){
+	public boolean localCheck(boolean doEvent){
 		int high = offset+size;
-		int val = Integer.MIN_VALUE;
-		for(int i = offset;i < high;i++){
+		int val = mainArray[offset];
+		for(int i = offset+1;i < high;i++){
 			int vil = mainArray[i];
+			if(doEvent){
+				mainCooldown[i] = mainCooldown[i-1] = System.nanoTime()+visualCooldown;
+				fireEvent(val,vil,false);
+			}
 			if(vil < val){
 				return false;
 			}

@@ -176,9 +176,6 @@ public class SorterManager implements Sorter{
 		if(!Sorter.guardedSort(vis)){
 			Sorter s = getSorter();
 			return s.sort(vis, this, exe);
-			//if(!vis.localCheck()){
-			//	throw new IllegalStateException(s.getClass().getName()+" \""+s.toString()+"\" DEFECTED AT ARRAY SIZE "+vis.size);
-			//}
 		}
 		return CompletionTask.COMPLETED_STAGE;
 	}
