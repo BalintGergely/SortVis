@@ -1,16 +1,20 @@
-import g.sort.vis.BitonicSort;
-import g.sort.vis.BubbleSort;
-import g.sort.vis.ConfigurableSorter;
-import g.sort.vis.GnomeSort;
-import g.sort.vis.GravitySort;
-import g.sort.vis.HeapSort;
-import g.sort.vis.MergeSort;
-import g.sort.vis.OddEvenSort;
-import g.sort.vis.QuickSort;
-import g.sort.vis.RadixSort;
-import g.sort.vis.RandomSort;
-import g.sort.vis.SelectionSort;
-import g.sort.vis.InsertionSort;
+import net.balintgergely.sortvis.ConfigurableSorter;
+import net.balintgergely.sortvis.algos.BitonicSort;
+import net.balintgergely.sortvis.algos.BubbleSort;
+import net.balintgergely.sortvis.algos.CombSort;
+import net.balintgergely.sortvis.algos.CountingSort;
+import net.balintgergely.sortvis.algos.CycleSort;
+import net.balintgergely.sortvis.algos.GnomeSort;
+import net.balintgergely.sortvis.algos.GravitySort;
+import net.balintgergely.sortvis.algos.HeapSort;
+import net.balintgergely.sortvis.algos.InsertionSort;
+import net.balintgergely.sortvis.algos.MergeSort;
+import net.balintgergely.sortvis.algos.OddEvenSort;
+import net.balintgergely.sortvis.algos.QuickSort;
+import net.balintgergely.sortvis.algos.RadixSort;
+import net.balintgergely.sortvis.algos.SelectionSort;
+import net.balintgergely.sortvis.algos.ShellSort;
+import net.balintgergely.sortvis.algos.SmoothSort;
 
 /**
  * 
@@ -31,8 +35,12 @@ module g.sort.vis {
 	MergeSort,
 	QuickSort,
 	HeapSort,
+	SmoothSort,
 	RadixSort,
+	CountingSort,
+	CycleSort,
+	ShellSort,
+	CombSort,
 	GravitySort,
-	BitonicSort,
-	RandomSort;
+	BitonicSort;
 }
